@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Atlantida Market</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#080a0f;
+ color:#fff;
+ font-family:Arial,sans-serif
+}
+.app{
+ max-width:650px;
+ margin:auto;
+ padding:16px 14px 90px
+}
+.header{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:18px
+}
+.logo{
+ font-size:21px;
+ font-weight:800
+}
+.logo span{color:#4d9cff}
+.badge{
+ background:#151b27;
+ border-radius:12px;
+ padding:8px 10px;
+ font-size:11px;
+ color:#8ea0bd
+}
+.hero{
+ background:linear-gradient(135deg,#111a2d,#10131b);
+ border:1px solid #252d3b;
+ border-radius:23px;
+ padding:22px;
+ margin-bottom:15px
+}
+.hero h1{
+ margin:0 0 7px;
+ font-size:27px
+}
+.hero p{
+ margin:0;
+ color:#9ca8bb
+}
+.search{
+ width:100%;
+ padding:14px;
+ border-radius:14px;
+ border:1px solid #272e3b;
+ background:#11151d;
+ color:white;
+ outline:none;
+ margin-bottom:12px
+}
+.categories{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:10px
+}
+.cat{
+ border:1px solid #272e3b;
+ background:#11151d;
+ color:white;
+ padding:16px;
+ border-radius:17px;
+ text-align:left
+}
+.cat b{
+ display:block;
+ margin-top:7px
+}
+.section{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin:22px 0 12px
+}
+.section h2{
+ font-size:18px;
+ margin:0
+}
+.card{
+ background:#11151d;
+ border:1px solid #272e3b;
+ border-radius:19px;
+ padding:16px;
+ margin-bottom:11px
+}
+.card h3{
+ margin:0 0 7px
+}
+.muted{
+ color:#8995a8;
+ font-size:13px
+}
+.price{
+ font-size:18px;
+ font-weight:800;
+ margin:12px 0
+}
+.btn{
+ width:100%;
+ border:0;
+ padding:13px;
+ border-radius:13px;
+ background:#3186ff;
+ color:white;
+ font-weight:700
+}
+.btn2{
+ width:100%;
+ border:0;
+ padding:13px;
+ border-radius:13px;
+ background:#1b222d;
+ color:white;
+ margin-top:8px
+}
+.page{display:none}
+.page.active{display:block}
+.nav{
+ position:fixed;
+ bottom:0;
+ left:0;
+ right:0;
+ display:flex;
+ justify-content:center;
+ background:#0d1017;
+ border-top:1px solid #272d38;
+ padding:8px
+}
+.nav button{
+ flex:1;
+ max-width:130px;
+ border:0;
+ background:none;
+ color:#8e99ab;
+ padding:7px 2px;
+ font-size:11px
+}
+.nav button.active{color:#fff}
+.empty{
+ padding:35px;
+ text-align:center;
+ color:#8792a5
+}
+textarea{
+ resize:none;
+ min-height:100px
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="header">
+<div class="logo">🌊 <span>ATLANTIDA</span></div>
+<div class="badge">TEST MARKET</div>
+</div>
+
+<div id="home" class="page active">
+
+<div class="hero">
+<h1>Atlantida Market</h1>
+<p>Покупай и размещай объявления внутри Telegram</p>
+</div>
+
+<input
+ id="search"
+ class="search"
+ placeholder="🔎 Найти Stars, Gifts, NFT..."
+>
+
+<div class="categories">
+
+<button class="cat" onclick="loadCategory('stars')">
+⭐
+<b>Telegram Stars</b>
+</button>
+
+<button class="cat" onclick="loadCategory('gifts')">
+🎁
+<b>Telegram Gifts</b>
+</button>
+
+<button class="cat" onclick="loadCategory('nft')">
+💎
+<b>NFT</b>
+</button>
+
+<button class="cat" onclick="loadCategory('ton')">
+💠
+<b>TON</b>
+</button>
+
+</div>
+
+<div class="section">
+<h2>🔥 Объявления</h2>
+</div>
+
+<div id="items"></div>
+
+</div>
+
+
+<div id="sell" class="page">
+
+<div class="section">
+<h2>📤 Новое объявление</h2>
+</div>
+
+<div class="card">
+
+<input
+ id="name"
+ class="search"
+ placeholder="Название"
+>
+
+<input
+ id="amount"
+ class="search"
+ placeholder="Количество"
+>
+
+<input
+ id="price"
+ class="search"
+ placeholder="Цена"
+>
+
+<select id="category" class="search">
+<option value="stars">⭐ Stars</option>
+<option value="gifts">🎁 Gifts</option>
+<option value="nft">💎 NFT</option>
+<option value="ton">💠 TON</option>
+<option value="other">📦 Другое</option>
+</select>
+
+<textarea
+ id="description"
+ class="search"
+ placeholder="Описание"
+></textarea>
+
+<button class="btn" onclick="createListing()">
+Создать объявление
+</button>
+
+</div>
+
+</div>
+
+
+<div id="profile" class="page">
+
+<div class="section">
+<h2>👤 Профиль</h2>
+</div>
+
+<div class="card">
+
+<h3 id="username">Пользователь</h3>
+
+<div class="muted">Telegram ID</div>
+<div id="userid" class="price">—</div>
+
+<div class="muted">Мои объявления</div>
+<div id="mycount" class="price">0</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="nav">
+
+<button class="active" onclick="showPage('home',this)">
+🏠<br>Главная
+</button>
+
+<button onclick="showPage('sell',this)">
+📤<br>Продать
+</button>
+
+<button onclick="showProfile(this)">
+👤<br>Профиль
+</button>
+
+</div>
+
+
+<script>
+
+const tg =
+ window.Telegram &&
+ window.Telegram.WebApp
+ ? window.Telegram.WebApp
+ : null;
+
+if(tg){
+ tg.ready();
+ tg.expand();
+}
+
+function user(){
+
+ if(tg &&
+    tg.initDataUnsafe &&
+    tg.initDataUnsafe.user){
+
+   return tg.initDataUnsafe.user;
+
+ }
+
+ return {
+   id:0,
+   first_name:"Demo",
+   username:"demo"
+ };
+}
+
+
+function esc(x){
+
+ return String(x ?? "")
+ .replaceAll("&","&amp;")
+ .replaceAll("<","&lt;")
+ .replaceAll(">","&gt;")
+ .replaceAll('"',"&quot;");
+}
+
+
+function catName(x){
+
+ return {
+  stars:"⭐ Telegram Stars",
+  gifts:"🎁 Telegram Gifts",
+  nft:"💎 NFT",
+  ton:"💠 TON",
+  other:"📦 Другое"
+ }[x] || x;
+
+}
+
+
+async function loadListings(url="/api/listings"){
+
+ const box=document.getElementById("items");
+
+ box.innerHTML=
+ '<div class="empty">Загрузка...</div>';
+
+ try{
+
+   const response=await fetch(url);
+   const data=await response.json();
+
+   if(!data.length){
+
+     box.innerHTML=
+       '<div class="empty">Объявлений пока нет.</div>';
+
+     return;
+   }
+
+   box.innerHTML=data.map(x=>`
+
+     <div class="card">
+
+       <h3>${esc(x.name)}</h3>
+
+       <div class="muted">
+         ${catName(x.category)}
+       </div>
+
+       <div class="muted">
+         Количество: ${esc(x.amount)}
+       </div>
+
+       <div class="price">
+         ${esc(x.price)}
+       </div>
+
+       <div class="muted">
+         ${esc(x.description)}
+       </div>
+
+       <br>
+
+       <button
+         class="btn"
+         onclick="deal(${x.id})"
+       >
+         🤝 Создать тестовую сделку
+       </button>
+
+     </div>
+
+   `).join("");
+
+ }catch(e){
+
+   box.innerHTML=
+    '<div class="empty">Ошибка соединения с сервером.</div>';
+
+ }
+}
+
+
+async function loadCategory(category){
+
+ await loadListings(
+   "/api/listings?category="+
+   encodeURIComponent(category)
+ );
+
+}
+
+
+document.getElementById("search")
+.addEventListener("input",async function(){
+
+ const q=this.value.trim();
+
+ if(!q){
+   loadListings();
+   return;
+ }
+
+ await loadListings(
+   "/api/listings?search="+
+   encodeURIComponent(q)
+ );
+
+});
+
+
+async function createListing(){
+
+ const u=user();
+
+ const data={
+   seller_id:u.id,
+   category:document.getElementById("category").value,
+   name:document.getElementById("name").value.trim(),
+   amount:document.getElementById("amount").value.trim(),
+   price:document.getElementById("price").value.trim(),
+   description:document.getElementById("description").value.trim()
+ };
+
+ if(!data.name ||
+    !data.amount ||
+    !data.price){
+
+   alert("Заполни название, количество и цену.");
+   return;
+ }
+
+ const r=await fetch(
+   "/api/listings",
+   {
+     method:"POST",
+     headers:{
+       "Content-Type":"application/json"
+     },
+     body:JSON.stringify(data)
+   }
+ );
+
+ const result=await r.json();
+
+ if(!result.ok){
+
+   alert("Не удалось создать объявление.");
+   return;
+ }
+
+ document.getElementById("name").value="";
+ document.getElementById("amount").value="";
+ document.getElementById("price").value="";
+ document.getElementById("description").value="";
+
+ if(tg){
+   tg.showAlert("Объявление создано!");
+ }
+
+ showPage("home");
+
+ loadListings();
+
+}
+
+
+async function deal(id){
+
+ const u=user();
+
+ const r=await fetch(
+   "/api/trades",
+   {
+     method:"POST",
+     headers:{
+       "Content-Type":"application/json"
+     },
+     body:JSON.stringify({
+       listing_id:id,
+       buyer_id:u.id
+     })
+   }
+ );
+
+ const result=await r.json();
+
+ if(result.ok){
+
+   if(tg){
+     tg.showAlert(
+       "Тестовая сделка #"+
+       result.trade_id+
+       " создана."
+     );
+   }else{
+     alert("Тестовая сделка создана.");
+   }
+
+ }else{
+
+   alert(
+     result.error ||
+     "Не удалось создать сделку."
+   );
+
+ }
+
+}
+
+
+async function showProfile(button){
+
+ const u=user();
+
+ document.getElementById("username")
+ .textContent=
+   u.username
+   ? "@"+u.username
+   : u.first_name || "Пользователь";
+
+ document.getElementById("userid")
+ .textContent=u.id;
+
+ const r=await fetch(
+   "/api/listings"
+ );
+
+ const data=await r.json();
+
+ document.getElementById("mycount")
+ .textContent=
+   data.filter(
+     x=>String(x.seller_id)===String(u.id)
+   ).length;
+
+ showPage("profile",button);
+
+}
+
+
+function showPage(id,button){
+
+ document.querySelectorAll(".page")
+ .forEach(x=>x.classList.remove("active"));
+
+ document.getElementById(id)
+ .classList.add("active");
+
+ document.querySelectorAll(".nav button")
+ .forEach(x=>x.classList.remove("active"));
+
+ if(button){
+   button.classList.add("active");
+ }
+
+ if(id==="home"){
+   loadListings();
+ }
+
+}
+
+
+loadListings();
+
+</script>
+
+</body>
+</html>
