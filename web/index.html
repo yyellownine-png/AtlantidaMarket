@@ -2407,5 +2407,535 @@ loadListings();
 loadProfile();
 
 </script>
+
+<script>
+/* ===== REPORTS / TRADE CHAT / ADMIN UI ===== */
+
+let tradeChatTimer = null;
+
+async function sendReport(listingId){
+  const reason = prompt(
+    "Причина жалобы:\n\n" +
+    "Например: мошенничество, запрещённый товар или неверное описание."
+  );
+
+  if(!reason || !reason.trim()) return;
+
+  try{
+    const res = await fetch(API + "/api/reports", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        listing_id:Number(listingId),
+        reporter_id:Number(user().id),
+        reason:reason.trim()
+      })
+    });
+
+    const data = await res.json();
+
+    if(!res.ok || !data.ok){
+      toast(data.error || "Не удалось отправить жалобу");
+      return;
+    }
+
+    toast("🛡️ Жалоба отправлена");
+  }catch(e){
+    toast("Ошибка соединения");
+  }
+}
+
+
+async function openTradeChat(tradeId){
+  const content = document.getElementById("modalContent");
+
+  content.innerHTML = `
+    <h2>💬 Чат сделки #${Number(tradeId)}</h2>
+
+    <div id="tradeChatMessages"
+      style="
+        max-height:360px;
+        overflow:auto;
+        padding:4px 0;
+      ">
+      <div class="info">Загрузка сообщений...</div>
+    </div>
+
+    <div style="
+      display:flex;
+      gap:8px;
+      margin-top:12px;
+    ">
+      <input
+        id="tradeChatInput"
+        maxlength="500"
+        placeholder="Сообщение..."
+        style="
+          flex:1;
+          min-width:0;
+          padding:13px;
+          border-radius:15px;
+          border:1px solid rgba(100,180,255,.14);
+          background:rgba(5,8,18,.7);
+          color:#fff;
+          outline:none;
+        "
+      >
+
+      <button
+        class="primary"
+        style="width:auto;margin:0;padding:0 16px"
+        onclick="sendTradeChat(${Number(tradeId)})"
+      >➤</button>
+    </div>
+  `;
+
+  document.getElementById("modal").classList.add("show");
+
+  await loadTradeChat(tradeId);
+
+  clearInterval(tradeChatTimer);
+
+  tradeChatTimer = setInterval(
+    () => loadTradeChat(tradeId),
+    3000
+  );
+}
+
+
+async function loadTradeChat(tradeId){
+  const box = document.getElementById("tradeChatMessages");
+
+  if(!box) return;
+
+  try{
+    const res = await fetch(
+      API + "/api/trade-chat?trade_id=" +
+      encodeURIComponent(tradeId) +
+      "&user_id=" +
+      encodeURIComponent(user().id)
+    );
+
+    const data = await res.json();
+
+    if(!res.ok || !data.ok){
+      box.innerHTML = `
+        <div class="info">
+          ${esc(data.error || "Ошибка")}
+        </div>
+      `;
+      return;
+    }
+
+    if(!data.messages.length){
+      box.innerHTML = `
+        <div class="empty">
+          💬 Пока нет сообщений
+        </div>
+      `;
+      return;
+    }
+
+    box.innerHTML = data.messages.map(m => `
+      <div style="
+        margin:7px 0;
+        padding:11px 13px;
+        border-radius:15px;
+        background:${
+          Number(m.user_id) === Number(user().id)
+            ? "rgba(35,190,255,.10)"
+            : "rgba(255,255,255,.045)"
+        };
+        border:1px solid rgba(255,255,255,.055);
+      ">
+        <div style="
+          color:#7f8ca7;
+          font-size:10px;
+          margin-bottom:4px;
+        ">
+          ${esc(m.first_name || "Пользователь")}
+        </div>
+
+        <div style="
+          color:#fff;
+          font-size:13px;
+          line-height:1.45;
+          word-break:break-word;
+        ">
+          ${esc(m.text)}
+        </div>
+      </div>
+    `).join("");
+
+    box.scrollTop = box.scrollHeight;
+
+  }catch(e){
+    box.innerHTML = `
+      <div class="info">Ошибка соединения</div>
+    `;
+  }
+}
+
+
+async function sendTradeChat(tradeId){
+  const input = document.getElementById("tradeChatInput");
+  const text = input?.value.trim();
+
+  if(!text) return;
+
+  const u = user();
+
+  try{
+    const res = await fetch(API + "/api/trade-chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        trade_id:Number(tradeId),
+        user_id:Number(u.id),
+        username:u.username || "",
+        first_name:u.first_name || "Пользователь",
+        text:text
+      })
+    });
+
+    const data = await res.json();
+
+    if(!res.ok || !data.ok){
+      toast(data.error || "Не удалось отправить");
+      return;
+    }
+
+    input.value = "";
+    await loadTradeChat(tradeId);
+
+  }catch(e){
+    toast("Ошибка соединения");
+  }
+}
+
+
+async function openAdminPanel(){
+  const content = document.getElementById("modalContent");
+
+  content.innerHTML = `
+    <h2>👑 Админ-панель</h2>
+
+    <div class="info">
+      Управление маркетом
+    </div>
+
+    <button class="primary"
+      onclick="loadAdminReports()">
+      🛡️ Жалобы
+    </button>
+
+    <button class="primary"
+      onclick="loadAdminListings()">
+      📦 Объявления
+    </button>
+
+    <button class="primary"
+      onclick="loadAdminTrades()">
+      🤝 Сделки
+    </button>
+  `;
+
+  document.getElementById("modal").classList.add("show");
+}
+
+
+async function loadAdminReports(){
+  const box = document.getElementById("modalContent");
+
+  box.innerHTML = `
+    <h2>🛡️ Жалобы</h2>
+    <div class="info">Загрузка...</div>
+  `;
+
+  try{
+    const res = await fetch(
+      API + "/api/reports?user_id=" +
+      encodeURIComponent(user().id)
+    );
+
+    const data = await res.json();
+
+    if(!res.ok || !data.ok){
+      box.innerHTML = `
+        <h2>🛡️ Жалобы</h2>
+        <div class="info">${esc(data.error || "Нет доступа")}</div>
+      `;
+      return;
+    }
+
+    box.innerHTML = `
+      <h2>🛡️ Жалобы</h2>
+
+      ${
+        data.reports.length
+        ? data.reports.map(r => `
+          <div class="trade-card">
+
+            <div class="trade-card-title">
+              🛡️ Жалоба #${Number(r.id)}
+            </div>
+
+            <div class="trade-card-meta">
+              Объявление #${Number(r.listing_id)}
+            </div>
+
+            <div class="review-text">
+              ${esc(r.reason || "Причина не указана")}
+            </div>
+
+            <div class="trade-card-meta">
+              Статус объявления: ${esc(r.status)}
+            </div>
+
+          </div>
+        `).join("")
+        : `<div class="empty">Жалоб нет</div>`
+      }
+    `;
+
+  }catch(e){
+    toast("Ошибка соединения");
+  }
+}
+
+
+async function loadAdminListings(){
+  const box = document.getElementById("modalContent");
+
+  box.innerHTML = `
+    <h2>📦 Объявления</h2>
+    <div class="info">Загрузка...</div>
+  `;
+
+  try{
+    const res = await fetch(
+      API + "/api/admin/listings?user_id=" +
+      encodeURIComponent(user().id)
+    );
+
+    const data = await res.json();
+
+    if(!res.ok || !data.ok){
+      box.innerHTML = `
+        <h2>📦 Объявления</h2>
+        <div class="info">${esc(data.error || "Нет доступа")}</div>
+      `;
+      return;
+    }
+
+    box.innerHTML = `
+      <h2>📦 Объявления</h2>
+
+      ${
+        data.listings.length
+        ? data.listings.map(x => `
+          <div class="trade-card">
+
+            <div class="trade-card-title">
+              ${esc(x.name)}
+            </div>
+
+            <div class="trade-card-price">
+              ${esc(x.price)} ${esc(x.currency)}
+            </div>
+
+            <div class="trade-card-meta">
+              #${Number(x.id)} · ${esc(x.status)}
+            </div>
+
+            ${
+              x.status === "active"
+              ? `
+                <button
+                  class="primary"
+                  onclick="adminCloseListing(${Number(x.id)})">
+                  🚫 Закрыть объявление
+                </button>
+              `
+              : ""
+            }
+
+          </div>
+        `).join("")
+        : `<div class="empty">Объявлений нет</div>`
+      }
+    `;
+
+  }catch(e){
+    toast("Ошибка соединения");
+  }
+}
+
+
+async function adminCloseListing(listingId){
+  if(!confirm("Закрыть это объявление?")) return;
+
+  try{
+    const res = await fetch(
+      API + "/api/admin/listings/close",
+      {
+        method:"PATCH",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          listing_id:Number(listingId),
+          user_id:Number(user().id)
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if(!res.ok || !data.ok){
+      toast(data.error || "Ошибка");
+      return;
+    }
+
+    toast("Объявление закрыто");
+    loadAdminListings();
+
+  }catch(e){
+    toast("Ошибка соединения");
+  }
+}
+
+
+async function loadAdminTrades(){
+  const box = document.getElementById("modalContent");
+
+  box.innerHTML = `
+    <h2>🤝 Сделки</h2>
+    <div class="info">Загрузка...</div>
+  `;
+
+  try{
+    const res = await fetch(
+      API + "/api/admin/trades?user_id=" +
+      encodeURIComponent(user().id)
+    );
+
+    const data = await res.json();
+
+    if(!res.ok || !data.ok){
+      box.innerHTML = `
+        <h2>🤝 Сделки</h2>
+        <div class="info">${esc(data.error || "Нет доступа")}</div>
+      `;
+      return;
+    }
+
+    box.innerHTML = `
+      <h2>🤝 Сделки</h2>
+
+      ${
+        data.trades.length
+        ? data.trades.map(x => `
+          <div class="trade-card">
+
+            <div class="trade-card-title">
+              🤝 Сделка #${Number(x.id)}
+            </div>
+
+            <div class="trade-card-price">
+              ${esc(x.amount)} ${esc(x.currency)}
+            </div>
+
+            <div class="trade-card-meta">
+              Объявление #${Number(x.listing_id)}
+              · ${esc(x.status)}
+            </div>
+
+          </div>
+        `).join("")
+        : `<div class="empty">Сделок нет</div>`
+      }
+    `;
+
+  }catch(e){
+    toast("Ошибка соединения");
+  }
+}
+
+
+/* Добавляем кнопку жалобы после профиля продавца */
+const _openProduct = window.openProduct;
+
+if(typeof _openProduct === "function"){
+  window.openProduct = async function(id){
+    await _openProduct(id);
+
+    const content = document.getElementById("modalContent");
+
+    if(!content) return;
+
+    if(!content.querySelector(".report-button")){
+      const sellerButton =
+        content.querySelector(".seller-link");
+
+      if(sellerButton){
+        sellerButton.insertAdjacentHTML(
+          "afterend",
+          `
+            <button
+              class="report-button"
+              onclick="sendReport(${Number(id)})"
+              style="
+                width:100%;
+                margin-top:8px;
+                min-height:45px;
+                border-radius:15px;
+                border:1px solid rgba(255,90,110,.18);
+                background:rgba(255,80,100,.06);
+                color:#ff9aa8;
+                font-weight:800;
+                cursor:pointer;
+              "
+            >
+              🛡️ Пожаловаться
+            </button>
+          `
+        );
+      }
+    }
+  };
+}
+
+
+/* Добавляем кнопку чата в сделку */
+const _openTrade = window.openTrade;
+
+if(typeof _openTrade === "function"){
+  window.openTrade = async function(tradeId,type){
+    await _openTrade(tradeId,type);
+
+    const content = document.getElementById("modalContent");
+
+    if(!content) return;
+
+    if(!content.querySelector(".trade-chat-button")){
+      const button = document.createElement("button");
+
+      button.className = "primary trade-chat-button";
+      button.style.marginTop = "10px";
+      button.textContent = "💬 Открыть чат сделки";
+
+      button.onclick = () =>
+        openTradeChat(Number(tradeId));
+
+      content.appendChild(button);
+    }
+  };
+}
+
+
+window.addEventListener("beforeunload",()=>{
+  clearInterval(tradeChatTimer);
+});
+</script>
+
 </body>
 </html>

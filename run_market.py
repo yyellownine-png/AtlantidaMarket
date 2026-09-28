@@ -116,6 +116,18 @@ async def init_db():
         """)
 
         await db.execute("""
+        CREATE TABLE IF NOT EXISTS trade_chat(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trade_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            username TEXT DEFAULT '',
+            first_name TEXT DEFAULT '',
+            text TEXT NOT NULL,
+            created_at TEXT
+        )
+        """)
+
+        await db.execute("""
         CREATE TABLE IF NOT EXISTS public_chat(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -695,6 +707,331 @@ async def chat_post(request):
     })
 
 
+
+async def create_report(request):
+    data = await json_body(request)
+
+    listing_id = int(data.get("listing_id", 0))
+    reporter_id = int(data.get("reporter_id", 0))
+    reason = str(data.get("reason") or "").strip()
+
+    if not listing_id or not reporter_id:
+        return web.json_response(
+            {"ok": False, "error": "Недостаточно данных"},
+            status=400
+        )
+
+    if len(reason) > 300:
+        return web.json_response(
+            {"ok": False, "error": "Причина слишком длинная"},
+            status=400
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT id FROM reports
+        WHERE listing_id=? AND reporter_id=?
+        """, (listing_id, reporter_id))
+
+        if await cur.fetchone():
+            return web.json_response(
+                {"ok": False, "error": "Ты уже отправлял жалобу"},
+                status=400
+            )
+
+        await db.execute("""
+        INSERT INTO reports
+        (listing_id,reporter_id,reason,created_at)
+        VALUES(?,?,?,?)
+        """, (
+            listing_id,
+            reporter_id,
+            reason,
+            datetime.utcnow().isoformat()
+        ))
+
+        await db.commit()
+
+    return web.json_response({"ok": True})
+
+
+async def get_reports(request):
+    admin_ids = {
+        x.strip()
+        for x in os.getenv("ADMIN_IDS", "").split(",")
+        if x.strip()
+    }
+
+    user_id = str(request.query.get("user_id", ""))
+
+    if user_id not in admin_ids:
+        return web.json_response(
+            {"ok": False, "error": "Нет доступа"},
+            status=403
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT
+            r.id,r.listing_id,r.reporter_id,
+            r.reason,r.created_at,
+            l.name,l.price,l.currency,l.status
+        FROM reports r
+        LEFT JOIN listings l ON l.id=r.listing_id
+        ORDER BY r.id DESC
+        LIMIT 100
+        """)
+
+        rows = await cur.fetchall()
+
+    return web.json_response({
+        "ok": True,
+        "reports": [
+            {
+                "id": r[0],
+                "listing_id": r[1],
+                "reporter_id": r[2],
+                "reason": r[3] or "",
+                "created_at": r[4] or "",
+                "name": r[5] or "Объявление",
+                "price": r[6] or "",
+                "currency": r[7] or "",
+                "status": r[8] or ""
+            }
+            for r in rows
+        ]
+    })
+
+
+async def trade_chat_get(request):
+    trade_id = int(request.query.get("trade_id", 0))
+    user_id = int(request.query.get("user_id", 0))
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT buyer_id,seller_id
+        FROM trades
+        WHERE id=?
+        """, (trade_id,))
+
+        trade = await cur.fetchone()
+
+        if not trade:
+            return web.json_response(
+                {"ok": False, "error": "Сделка не найдена"},
+                status=404
+            )
+
+        if user_id not in (trade[0], trade[1]):
+            return web.json_response(
+                {"ok": False, "error": "Нет доступа"},
+                status=403
+            )
+
+        cur = await db.execute("""
+        SELECT id,user_id,username,first_name,text,created_at
+        FROM trade_chat
+        WHERE trade_id=?
+        ORDER BY id ASC
+        LIMIT 200
+        """, (trade_id,))
+
+        rows = await cur.fetchall()
+
+    return web.json_response({
+        "ok": True,
+        "messages": [
+            {
+                "id": r[0],
+                "user_id": r[1],
+                "username": r[2] or "",
+                "first_name": r[3] or "Пользователь",
+                "text": r[4],
+                "created_at": r[5] or ""
+            }
+            for r in rows
+        ]
+    })
+
+
+async def trade_chat_post(request):
+    data = await json_body(request)
+
+    trade_id = int(data.get("trade_id", 0))
+    user_id = int(data.get("user_id", 0))
+    username = str(data.get("username") or "")
+    first_name = str(data.get("first_name") or "Пользователь")
+    text = str(data.get("text") or "").strip()
+
+    if not trade_id or not user_id or not text:
+        return web.json_response(
+            {"ok": False, "error": "Пустое сообщение"},
+            status=400
+        )
+
+    if len(text) > 500:
+        return web.json_response(
+            {"ok": False, "error": "Максимум 500 символов"},
+            status=400
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT buyer_id,seller_id
+        FROM trades
+        WHERE id=?
+        """, (trade_id,))
+
+        trade = await cur.fetchone()
+
+        if not trade:
+            return web.json_response(
+                {"ok": False, "error": "Сделка не найдена"},
+                status=404
+            )
+
+        if user_id not in (trade[0], trade[1]):
+            return web.json_response(
+                {"ok": False, "error": "Нет доступа"},
+                status=403
+            )
+
+        await db.execute("""
+        INSERT INTO trade_chat
+        (trade_id,user_id,username,first_name,text,created_at)
+        VALUES(?,?,?,?,?,?)
+        """, (
+            trade_id,
+            user_id,
+            username,
+            first_name,
+            text,
+            datetime.utcnow().isoformat()
+        ))
+
+        await db.commit()
+
+    return web.json_response({"ok": True})
+
+
+async def admin_listings(request):
+    admin_ids = {
+        x.strip()
+        for x in os.getenv("ADMIN_IDS", "").split(",")
+        if x.strip()
+    }
+
+    user_id = str(request.query.get("user_id", ""))
+
+    if user_id not in admin_ids:
+        return web.json_response(
+            {"ok": False, "error": "Нет доступа"},
+            status=403
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT id,seller_id,name,amount,price,currency,status,created_at
+        FROM listings
+        ORDER BY id DESC
+        LIMIT 100
+        """)
+
+        rows = await cur.fetchall()
+
+    return web.json_response({
+        "ok": True,
+        "listings": [
+            {
+                "id": r[0],
+                "seller_id": r[1],
+                "name": r[2],
+                "amount": r[3],
+                "price": r[4],
+                "currency": r[5],
+                "status": r[6],
+                "created_at": r[7]
+            }
+            for r in rows
+        ]
+    })
+
+
+async def admin_trades(request):
+    admin_ids = {
+        x.strip()
+        for x in os.getenv("ADMIN_IDS", "").split(",")
+        if x.strip()
+    }
+
+    user_id = str(request.query.get("user_id", ""))
+
+    if user_id not in admin_ids:
+        return web.json_response(
+            {"ok": False, "error": "Нет доступа"},
+            status=403
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT id,listing_id,buyer_id,seller_id,
+               amount,currency,status,created_at
+        FROM trades
+        ORDER BY id DESC
+        LIMIT 100
+        """)
+
+        rows = await cur.fetchall()
+
+    return web.json_response({
+        "ok": True,
+        "trades": [
+            {
+                "id": r[0],
+                "listing_id": r[1],
+                "buyer_id": r[2],
+                "seller_id": r[3],
+                "amount": r[4],
+                "currency": r[5],
+                "status": r[6],
+                "created_at": r[7]
+            }
+            for r in rows
+        ]
+    })
+
+
+async def admin_close_listing(request):
+    admin_ids = {
+        x.strip()
+        for x in os.getenv("ADMIN_IDS", "").split(",")
+        if x.strip()
+    }
+
+    data = await json_body(request)
+
+    user_id = str(data.get("user_id", ""))
+    listing_id = int(data.get("listing_id", 0))
+
+    if user_id not in admin_ids:
+        return web.json_response(
+            {"ok": False, "error": "Нет доступа"},
+            status=403
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+        UPDATE listings
+        SET status='closed'
+        WHERE id=?
+        """, (listing_id,))
+
+        await db.commit()
+
+    return web.json_response({"ok": True})
+
+
+
 @web.middleware
 async def cors_middleware(request, handler):
     if request.method == "OPTIONS":
@@ -747,6 +1084,16 @@ async def main():
 
     app.router.add_get("/api/reviews", get_reviews)
     app.router.add_post("/api/reviews", create_review)
+
+    app.router.add_post("/api/reports", create_report)
+    app.router.add_get("/api/reports", get_reports)
+
+    app.router.add_get("/api/trade-chat", trade_chat_get)
+    app.router.add_post("/api/trade-chat", trade_chat_post)
+
+    app.router.add_get("/api/admin/listings", admin_listings)
+    app.router.add_get("/api/admin/trades", admin_trades)
+    app.router.add_patch("/api/admin/listings/close", admin_close_listing)
 
     app.router.add_get("/api/chat", chat_get)
     app.router.add_post("/api/chat", chat_post)
