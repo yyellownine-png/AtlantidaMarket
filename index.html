@@ -1,411 +1,718 @@
-cd ~/AtlantidaMarket
-
-cat > index.html <<'EOF'
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Atlantida Market</title>
-
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 *{box-sizing:border-box}
+:root{
+  --bg:#07090d;
+  --panel:#10141c;
+  --panel2:#151b25;
+  --line:#252d3a;
+  --text:#f4f7fb;
+  --muted:#7f8999;
+  --blue:#37a8ff;
+  --cyan:#48e7ff;
+  --green:#35e68a;
+  --purple:#a66cff;
+}
 body{
-    margin:0;
-    background:#071018;
-    color:#fff;
-    font-family:Arial,sans-serif;
+  margin:0;
+  background:
+    radial-gradient(circle at 50% -10%,#123451 0,#07090d 38%),
+    #07090d;
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+  min-height:100vh;
 }
-header{
-    padding:20px 16px 10px;
-    font-size:26px;
-    font-weight:800;
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:32px 32px;
 }
-.sub{
-    color:#8fa3b8;
-    font-size:14px;
-    padding:0 16px 16px;
+.app{
+  width:min(100%,720px);
+  margin:auto;
+  padding:16px 14px 90px;
+  position:relative;
 }
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+.logo{
+  display:flex;
+  align-items:center;
+  gap:11px;
+}
+.logoIcon{
+  width:46px;height:46px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  font-size:24px;
+  background:linear-gradient(145deg,#173b59,#101923);
+  border:1px solid #2e83b9;
+  box-shadow:0 0 25px rgba(55,168,255,.22);
+}
+.logoTitle{
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:.5px;
+}
+.logoSub{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:3px;
+  text-transform:uppercase;
+}
+.profile{
+  width:42px;height:42px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#141a23;
+  border:1px solid var(--line);
+  font-size:20px;
+}
+.hero{
+  border:1px solid #23384b;
+  border-radius:24px;
+  padding:22px;
+  background:
+    radial-gradient(circle at 90% 20%,rgba(72,231,255,.15),transparent 30%),
+    linear-gradient(145deg,#101923,#0b0e14);
+  box-shadow:0 15px 50px rgba(0,0,0,.35);
+  margin-bottom:16px;
+  overflow:hidden;
+}
+.heroLabel{
+  color:var(--cyan);
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:2px;
+}
+.hero h1{
+  margin:7px 0 8px;
+  font-size:30px;
+  line-height:1;
+}
+.hero p{
+  color:#9ba6b6;
+  font-size:13px;
+  margin:0 0 18px;
+}
+.heroStats{
+  display:flex;
+  gap:8px;
+}
+.stat{
+  flex:1;
+  background:#0b1118;
+  border:1px solid #202c38;
+  border-radius:13px;
+  padding:10px;
+}
+.stat b{display:block;font-size:16px}
+.stat span{font-size:10px;color:var(--muted)}
 .search{
-    margin:0 16px 14px;
+  display:flex;
+  gap:8px;
+  margin-bottom:13px;
 }
 .search input{
-    width:100%;
-    padding:14px 16px;
-    border:1px solid #203142;
-    border-radius:14px;
-    background:#0d1924;
-    color:white;
-    outline:none;
-    font-size:15px;
+  flex:1;
+  border:1px solid var(--line);
+  background:#0e131b;
+  color:white;
+  outline:none;
+  border-radius:14px;
+  padding:14px;
+  font-size:14px;
+}
+.search input:focus{border-color:#317ca5}
+.sellTop{
+  border:0;
+  border-radius:14px;
+  background:linear-gradient(135deg,#27b879,#35e68a);
+  color:#06110b;
+  padding:0 15px;
+  font-weight:900;
 }
 .categories{
-    display:flex;
-    gap:8px;
-    padding:0 16px 16px;
-    overflow-x:auto;
+  display:flex;
+  gap:8px;
+  overflow:auto;
+  padding-bottom:5px;
+  margin-bottom:17px;
 }
-.categories button{
-    white-space:nowrap;
-    border:1px solid #243849;
-    background:#0d1924;
-    color:#b9c8d5;
-    border-radius:12px;
-    padding:10px 14px;
+.categories::-webkit-scrollbar{display:none}
+.cat{
+  flex:none;
+  padding:10px 13px;
+  border-radius:13px;
+  border:1px solid var(--line);
+  background:#10151d;
+  color:#aeb8c7;
+  font-weight:700;
+  font-size:12px;
 }
-.categories button.active{
-    background:#168cff;
-    border-color:#168cff;
-    color:white;
+.cat.active{
+  color:white;
+  border-color:#2e83b9;
+  background:#122638;
+  box-shadow:0 0 18px rgba(55,168,255,.12);
 }
-#listings{
-    padding:0 16px 100px;
+.sectionTitle{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:5px 2px 12px;
+}
+.sectionTitle h2{font-size:17px;margin:0}
+.sectionTitle span{font-size:11px;color:var(--muted)}
+.list{
+  display:grid;
+  gap:10px;
 }
 .card{
-    background:#0d1924;
-    border:1px solid #1d3040;
-    border-radius:16px;
-    padding:16px;
-    margin-bottom:12px;
+  position:relative;
+  background:linear-gradient(145deg,#121720,#0d1118);
+  border:1px solid #222b38;
+  border-radius:19px;
+  padding:14px;
+  transition:.18s;
 }
-.card h3{
-    margin:0 0 8px;
-    font-size:18px;
+.card:active{transform:scale(.985)}
+.cardTop{
+  display:flex;
+  gap:13px;
+  align-items:center;
 }
-.info{
-    color:#93a8ba;
-    font-size:13px;
-    margin-bottom:10px;
+.itemIcon{
+  width:58px;height:58px;
+  border-radius:16px;
+  display:grid;
+  place-items:center;
+  font-size:29px;
+  background:radial-gradient(circle at 35% 25%,#304d69,#111a25 70%);
+  border:1px solid #31516b;
+  box-shadow:inset 0 0 20px rgba(55,168,255,.08);
+}
+.cardInfo{flex:1;min-width:0}
+.cardName{
+  font-weight:900;
+  font-size:15px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cardMeta{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:5px;
 }
 .price{
-    font-size:19px;
-    font-weight:800;
-    color:#55b5ff;
+  color:var(--green);
+  font-size:17px;
+  font-weight:900;
+  margin-top:5px;
 }
-.desc{
-    color:#b7c5d0;
-    margin-top:9px;
-    font-size:14px;
+.cardBottom{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:12px;
+}
+.amount{
+  color:#9ba6b6;
+  font-size:11px;
+}
+.buy{
+  border:0;
+  border-radius:11px;
+  padding:9px 16px;
+  color:white;
+  background:linear-gradient(135deg,#267fc1,#37a8ff);
+  font-weight:900;
 }
 .empty{
-    text-align:center;
-    color:#8193a4;
-    padding:50px 10px;
+  text-align:center;
+  padding:45px 15px;
+  color:var(--muted);
+  border:1px dashed #283342;
+  border-radius:18px;
 }
-.sell{
-    position:fixed;
-    left:16px;
-    right:16px;
-    bottom:16px;
-    border:0;
-    border-radius:15px;
-    padding:15px;
-    background:#168cff;
-    color:white;
-    font-size:16px;
-    font-weight:700;
+.loader{
+  text-align:center;
+  color:var(--muted);
+  padding:35px;
 }
 .modal{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.75);
-    padding:20px;
-    align-items:center;
-    justify-content:center;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(8px);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  z-index:20;
 }
-.modal-box{
-    width:100%;
-    max-width:430px;
-    background:#0d1924;
-    border:1px solid #243849;
-    border-radius:18px;
-    padding:20px;
+.modal.show{display:flex}
+.modalBox{
+  width:min(100%,720px);
+  background:#10151d;
+  border:1px solid #293543;
+  border-radius:25px 25px 0 0;
+  padding:20px;
+  box-shadow:0 -15px 50px rgba(0,0,0,.5);
 }
-.modal-box h2{
-    margin-top:0;
+.modalHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:17px;
 }
-.modal-box input,
-.modal-box textarea,
-.modal-box select{
-    width:100%;
-    margin:6px 0;
-    padding:13px;
-    background:#071018;
-    border:1px solid #263b4d;
-    border-radius:12px;
-    color:white;
+.modalHead h2{margin:0;font-size:19px}
+.close{
+  border:0;
+  background:#1a202a;
+  color:#aeb8c7;
+  width:34px;height:34px;
+  border-radius:10px;
+  font-size:20px;
 }
-.modal-box textarea{
-    min-height:90px;
-    resize:vertical;
+.form{
+  display:grid;
+  gap:10px;
 }
-.actions{
-    display:flex;
-    gap:10px;
-    margin-top:10px;
+.form input,.form select,.form textarea{
+  width:100%;
+  border:1px solid #27313f;
+  background:#0b1017;
+  color:white;
+  border-radius:13px;
+  padding:13px;
+  outline:none;
+  font:inherit;
 }
-.actions button{
-    flex:1;
-    padding:13px;
-    border:0;
-    border-radius:12px;
-    font-weight:700;
-}
-.cancel{
-    background:#253542;
-    color:white;
-}
+.form textarea{min-height:80px;resize:none}
 .submit{
-    background:#168cff;
-    color:white;
+  border:0;
+  border-radius:14px;
+  padding:14px;
+  background:linear-gradient(135deg,#27b879,#35e68a);
+  color:#06110b;
+  font-weight:900;
+  font-size:15px;
 }
-.status{
-    margin-top:10px;
-    font-size:13px;
-    color:#91a7b8;
+.bottom{
+  position:fixed;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  width:min(calc(100% - 28px),692px);
+  display:flex;
+  gap:5px;
+  padding:7px;
+  background:rgba(13,17,24,.92);
+  border:1px solid #252e3a;
+  backdrop-filter:blur(15px);
+  border-radius:18px;
+  z-index:10;
 }
+.nav{
+  flex:1;
+  border:0;
+  background:transparent;
+  color:#687384;
+  padding:7px 3px;
+  font-size:10px;
+}
+.nav b{
+  display:block;
+  font-size:19px;
+  margin-bottom:2px;
+}
+.nav.active{color:#4bc9ff}
+.toast{
+  position:fixed;
+  top:15px;
+  left:50%;
+  transform:translateX(-50%) translateY(-80px);
+  background:#18212c;
+  border:1px solid #314153;
+  padding:12px 17px;
+  border-radius:13px;
+  z-index:50;
+  transition:.25s;
+  font-size:13px;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 
 <body>
 
-<header>🌊 Atlantida Market</header>
-<div class="sub">Безпечний маркет Telegram-подарунків, Stars, NFT та TON</div>
+<div class="app">
 
-<div class="search">
-    <input id="search" placeholder="🔎 Пошук товару...">
-</div>
-
-<div class="categories">
-    <button class="active" onclick="setCategory('',this)">Усі</button>
-    <button onclick="setCategory('Telegram Stars',this)">⭐ Stars</button>
-    <button onclick="setCategory('Telegram Gifts',this)">🎁 Gifts</button>
-    <button onclick="setCategory('NFT',this)">💎 NFT</button>
-    <button onclick="setCategory('TON',this)">💠 TON</button>
-</div>
-
-<div id="listings">
-    <div class="empty">Завантаження...</div>
-</div>
-
-<button class="sell" onclick="openSell()">＋ Продати товар</button>
-
-<div class="modal" id="modal">
-    <div class="modal-box">
-        <h2>Продати товар</h2>
-
-        <select id="category">
-            <option value="Telegram Stars">Telegram Stars</option>
-            <option value="Telegram Gifts">Telegram Gifts</option>
-            <option value="NFT">NFT</option>
-            <option value="TON">TON</option>
-        </select>
-
-        <input id="name" placeholder="Назва товару">
-        <input id="amount" placeholder="Кількість">
-        <input id="price" placeholder="Ціна">
-        <textarea id="description" placeholder="Опис"></textarea>
-
-        <div class="actions">
-            <button class="cancel" onclick="closeSell()">Скасувати</button>
-            <button class="submit" onclick="createListing()">Опублікувати</button>
-        </div>
-
-        <div class="status" id="status"></div>
+  <header class="header">
+    <div class="logo">
+      <div class="logoIcon">🌊</div>
+      <div>
+        <div class="logoTitle">Atlantida Market</div>
+        <div class="logoSub">Игровой маркет Telegram</div>
+      </div>
     </div>
+    <div class="profile">👤</div>
+  </header>
+
+  <section class="hero">
+    <div class="heroLabel">ATLANTIDA MARKET</div>
+    <h1>МАРКЕТ</h1>
+    <p>Покупай и продавай Telegram Stars, Gifts, NFT и TON в одном месте.</p>
+
+    <div class="heroStats">
+      <div class="stat">
+        <b id="statItems">0</b>
+        <span>товаров</span>
+      </div>
+      <div class="stat">
+        <b>24/7</b>
+        <span>маркет</span>
+      </div>
+      <div class="stat">
+        <b>⚡</b>
+        <span>быстро</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="search">
+    <input id="search" placeholder="🔎  Поиск товара...">
+    <button class="sellTop" onclick="openSell()">＋</button>
+  </div>
+
+  <div class="categories">
+    <button class="cat active" data-cat="all">🔥 Все</button>
+    <button class="cat" data-cat="stars">⭐ Stars</button>
+    <button class="cat" data-cat="gifts">🎁 Gifts</button>
+    <button class="cat" data-cat="nft">💎 NFT</button>
+    <button class="cat" data-cat="ton">💠 TON</button>
+  </div>
+
+  <div class="sectionTitle">
+    <h2>🔥 Товары</h2>
+    <span id="countText">Загрузка...</span>
+  </div>
+
+  <div id="list" class="list">
+    <div class="loader">Загрузка маркета...</div>
+  </div>
+
 </div>
+
+<div class="bottom">
+  <button class="nav active" onclick="scrollTopPage()">
+    <b>🏠</b>Маркет
+  </button>
+  <button class="nav" onclick="openSell()">
+    <b>➕</b>Продать
+  </button>
+  <button class="nav" onclick="showProfile()">
+    <b>👤</b>Профиль
+  </button>
+</div>
+
+<div class="modal" id="sellModal">
+  <div class="modalBox">
+    <div class="modalHead">
+      <h2>➕ Продать товар</h2>
+      <button class="close" onclick="closeSell()">×</button>
+    </div>
+
+    <form class="form" id="sellForm">
+      <select id="category" required>
+        <option value="stars">⭐ Telegram Stars</option>
+        <option value="gifts">🎁 Telegram Gifts</option>
+        <option value="nft">💎 NFT</option>
+        <option value="ton">💠 TON</option>
+        <option value="other">📦 Другое</option>
+      </select>
+
+      <input id="name" placeholder="Название товара" required>
+      <input id="amount" placeholder="Количество" required>
+      <input id="price" placeholder="Цена" required>
+      <textarea id="description" placeholder="Описание товара"></textarea>
+
+      <button class="submit" type="submit">
+        🚀 Опубликовать товар
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const tg = window.Telegram?.WebApp;
 if(tg){
-    tg.ready();
-    tg.expand();
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor("#07090d");
+  tg.setBackgroundColor("#07090d");
 }
 
 const API = "https://atlantidamarket.onrender.com";
 
-let currentCategory = "";
+let allListings = [];
+let currentCategory = "all";
 
-function getUser(){
-    if(tg && tg.initDataUnsafe && tg.initDataUnsafe.user){
-        return tg.initDataUnsafe.user;
-    }
+function user(){
+  return tg?.initDataUnsafe?.user || {
+    id: 0,
+    first_name: "Игрок",
+    username: "demo"
+  };
+}
 
-    return {
-        id: 0,
-        first_name: "Demo",
-        username: "demo"
-    };
+function esc(value){
+  return String(value ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+
+function icon(category){
+  return {
+    stars:"⭐",
+    gifts:"🎁",
+    nft:"💎",
+    ton:"💠",
+    other:"📦"
+  }[category] || "📦";
+}
+
+function categoryName(category){
+  return {
+    stars:"Telegram Stars",
+    gifts:"Telegram Gifts",
+    nft:"NFT",
+    ton:"TON",
+    other:"Другое"
+  }[category] || "Товар";
 }
 
 async function loadListings(){
-    const box = document.getElementById("listings");
+  const list = document.getElementById("list");
 
-    try{
-        let url = API + "/api/listings";
+  try{
+    const response = await fetch(API + "/api/listings");
 
-        if(currentCategory){
-            url += "?category=" + encodeURIComponent(currentCategory);
-        }
+    if(!response.ok) throw new Error("API");
 
-        const search = document.getElementById("search").value.trim();
+    allListings = await response.json();
 
-        if(search){
-            url = API + "/api/listings?search=" + encodeURIComponent(search);
-        }
+    document.getElementById("statItems").textContent = allListings.length;
 
-        const response = await fetch(url);
-
-        if(!response.ok){
-            throw new Error("HTTP " + response.status);
-        }
-
-        const data = await response.json();
-
-        if(!data.length){
-            box.innerHTML = '<div class="empty">Поки що оголошень немає</div>';
-            return;
-        }
-
-        box.innerHTML = data.map(item => `
-            <div class="card">
-                <h3>${escapeHtml(item.name)}</h3>
-
-                <div class="info">
-                    ${escapeHtml(item.category)}
-                    • Кількість: ${escapeHtml(item.amount)}
-                </div>
-
-                <div class="price">
-                    ${escapeHtml(item.price)}
-                </div>
-
-                ${
-                    item.description
-                    ? `<div class="desc">${escapeHtml(item.description)}</div>`
-                    : ""
-                }
-            </div>
-        `).join("");
-
-    }catch(error){
-        console.error(error);
-
-        box.innerHTML = `
-            <div class="empty">
-                Не вдалося завантажити оголошення
-                <br><br>
-                <small>${escapeHtml(error.message)}</small>
-            </div>
-        `;
-    }
+    render();
+  }catch(e){
+    list.innerHTML = `
+      <div class="empty">
+        <div style="font-size:32px">⚠️</div>
+        <br>
+        Не удалось загрузить товары.
+        <br><br>
+        <small>Попробуй открыть маркет ещё раз.</small>
+      </div>
+    `;
+  }
 }
 
-function escapeHtml(value){
-    return String(value ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+function render(){
+  const search = document.getElementById("search").value
+    .trim()
+    .toLowerCase();
+
+  let items = allListings.filter(x=>{
+    const categoryOk =
+      currentCategory === "all" ||
+      x.category === currentCategory;
+
+    const text = (
+      (x.name || "") + " " +
+      (x.description || "") + " " +
+      (x.category || "")
+    ).toLowerCase();
+
+    return categoryOk && (!search || text.includes(search));
+  });
+
+  document.getElementById("countText").textContent =
+    items.length + " товаров";
+
+  const list = document.getElementById("list");
+
+  if(!items.length){
+    list.innerHTML = `
+      <div class="empty">
+        <div style="font-size:34px">📦</div>
+        <br>
+        Здесь пока ничего нет
+        <br>
+        <small>Попробуй другую категорию или выставь свой товар.</small>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = items.map(item=>`
+    <div class="card">
+      <div class="cardTop">
+        <div class="itemIcon">${icon(item.category)}</div>
+
+        <div class="cardInfo">
+          <div class="cardName">${esc(item.name)}</div>
+          <div class="cardMeta">
+            ${esc(categoryName(item.category))}
+            ${item.description ? " • " + esc(item.description) : ""}
+          </div>
+          <div class="price">${esc(item.price)}</div>
+        </div>
+      </div>
+
+      <div class="cardBottom">
+        <div class="amount">
+          Количество: ${esc(item.amount)}
+        </div>
+
+        <button class="buy" onclick="buy(${item.id})">
+          Купить
+        </button>
+      </div>
+    </div>
+  `).join("");
 }
 
-function setCategory(category, button){
-    currentCategory = category;
+function buy(id){
+  const item = allListings.find(x => x.id == id);
 
-    document.querySelectorAll(".categories button")
-        .forEach(b => b.classList.remove("active"));
+  if(!item) return;
 
-    button.classList.add("active");
-
-    loadListings();
+  toast("🛒 Покупка товара №" + id + " скоро будет доступна");
 }
-
-let searchTimer;
-
-document.getElementById("search").addEventListener("input",()=>{
-    clearTimeout(searchTimer);
-
-    searchTimer = setTimeout(()=>{
-        loadListings();
-    },300);
-});
 
 function openSell(){
-    document.getElementById("modal").style.display = "flex";
+  document.getElementById("sellModal").classList.add("show");
 }
 
 function closeSell(){
-    document.getElementById("modal").style.display = "none";
-    document.getElementById("status").textContent = "";
+  document.getElementById("sellModal").classList.remove("show");
 }
 
-async function createListing(){
+async function createListing(e){
+  e.preventDefault();
 
-    const user = getUser();
+  const u = user();
 
-    const category = document.getElementById("category").value;
-    const name = document.getElementById("name").value.trim();
-    const amount = document.getElementById("amount").value.trim();
-    const price = document.getElementById("price").value.trim();
-    const description = document.getElementById("description").value.trim();
+  const data = {
+    seller_id: u.id,
+    category: document.getElementById("category").value,
+    name: document.getElementById("name").value,
+    amount: document.getElementById("amount").value,
+    price: document.getElementById("price").value,
+    description: document.getElementById("description").value
+  };
 
-    const status = document.getElementById("status");
+  try{
+    const response = await fetch(API + "/api/listings",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify(data)
+    });
 
-    if(!name || !amount || !price){
-        status.textContent = "Заповни назву, кількість та ціну.";
-        return;
-    }
+    if(!response.ok) throw new Error("create");
 
-    status.textContent = "Публікуємо...";
+    document.getElementById("sellForm").reset();
+    closeSell();
 
-    try{
+    toast("✅ Товар опубликован");
 
-        const response = await fetch(API + "/api/listings",{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-                seller_id:user.id,
-                category,
-                name,
-                amount,
-                price,
-                description
-            })
-        });
+    await loadListings();
 
-        const result = await response.json();
-
-        if(!response.ok || !result.ok){
-            throw new Error(result.error || "Помилка публікації");
-        }
-
-        status.textContent = "Оголошення опубліковано!";
-
-        document.getElementById("name").value = "";
-        document.getElementById("amount").value = "";
-        document.getElementById("price").value = "";
-        document.getElementById("description").value = "";
-
-        setTimeout(()=>{
-            closeSell();
-            loadListings();
-        },700);
-
-    }catch(error){
-        console.error(error);
-        status.textContent = "Помилка: " + error.message;
-    }
+  }catch(e){
+    toast("❌ Не удалось опубликовать товар");
+  }
 }
+
+function toast(text){
+  const el = document.getElementById("toast");
+
+  el.textContent = text;
+  el.classList.add("show");
+
+  clearTimeout(window.toastTimer);
+
+  window.toastTimer = setTimeout(()=>{
+    el.classList.remove("show");
+  },2500);
+}
+
+function showProfile(){
+  const u = user();
+
+  toast("👤 " + (u.first_name || "Игрок"));
+}
+
+function scrollTopPage(){
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+}
+
+document.querySelectorAll(".cat").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".cat")
+      .forEach(x=>x.classList.remove("active"));
+
+    btn.classList.add("active");
+
+    currentCategory = btn.dataset.cat;
+
+    render();
+  });
+});
+
+document.getElementById("search")
+  .addEventListener("input",render);
+
+document.getElementById("sellForm")
+  .addEventListener("submit",createListing);
+
+document.getElementById("sellModal")
+  .addEventListener("click",e=>{
+    if(e.target.id === "sellModal"){
+      closeSell();
+    }
+  });
 
 loadListings();
 </script>
 
 </body>
 </html>
-EOF
