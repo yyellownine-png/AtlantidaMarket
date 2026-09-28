@@ -171,101 +171,117 @@ async def create_listing(request):
     })
 
 
+
+async def telegram_notify(chat_id, message):
+    if not TOKEN or not chat_id:
+        return False
+
+    import aiohttp
+
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            url,
+            json={
+                "chat_id": int(chat_id),
+                "text": message
+            },
+            timeout=10
+        ) as response:
+            return response.status == 200
+
+
 async def create_trade(request):
     import aiosqlite
     from datetime import datetime
 
-    data=await request.json()
-
-    listing_id=int(data["listing_id"])
-    buyer_id=int(data["buyer_id"])
-
-    db_path=os.path.join(BASE,"atlantida.db")
-
-    async with aiosqlite.connect(db_path) as db:
-
-        cur=await db.execute("""
-            SELECT seller_id,status
-            FROM listings
-            WHERE id=?
-        """,(listing_id,))
-
-        row=await cur.fetchone()
-
-        if not row:
-            return web.json_response(
-                {"ok":False,"error":"listing_not_found"},
-                status=404
-            )
-
-        seller_id,status=row
-
-        if status!="active":
-            return web.json_response(
-                {"ok":False,"error":"listing_closed"},
-                status=400
-            )
-
-        if seller_id==buyer_id:
-            return web.json_response(
-                {"ok":False,"error":"own_listing"},
-                status=400
-            )
-
-        cur=await db.execute("""
-            INSERT INTO trades
-            (listing_id,buyer_id,seller_id,status,created_at)
-            VALUES(?,?,?,?,?)
-        """,(
-            listing_id,
-            buyer_id,
-            seller_id,
-            "created",
-            datetime.now().isoformat()
-        ))
-
-        trade_id=cur.lastrowid
-
-        await db.commit()
-
-    return web.json_response({
-        "ok":True,
-        "trade_id":trade_id
-    })
-
-
-def set_menu_button(url):
-
-    api=(
-        f"https://api.telegram.org/bot{TOKEN}/setChatMenuButton"
-    )
-
-    payload={
-        "menu_button":json.dumps({
-            "type":"web_app",
-            "text":"🌊 Market",
-            "web_app":{
-                "url":url
-            }
-        })
-    }
-
-    req=urllib.request.Request(
-        api,
-        data=urllib.parse.urlencode(payload).encode(),
-        headers={
-            "Content-Type":
-            "application/x-www-form-urlencoded"
-        }
-    )
-
     try:
-        print(
-            urllib.request.urlopen(req).read().decode()
-        )
-    except Exception as e:
-        print("Menu button error:",e)
+        data = await request.json()
 
+        listing_id = int(data["listing_id"])
+        buyer_id = int(data["buyer_id"])
+        amount = str(data.get("amount", ""))
+        currency = str(data.get("currency", "")).upper()
+
+        if currency not in ("TON", "USDT"):
+            return web.json_response(
+                {"ok": False, "error": "unsupported_currency"},
+                status=400
+            )
+
+        async with aiosqlite.connect(DB) as db:
+            cur = await db.execute("""
+                SELECT seller_id, price, name, status
+                FROM listings
+                WHERE id=?
+            """, (listing_id,))
+            row = await cur.fetchone()
+
+            if not row:
+                return web.json_response(
+                    {"ok": False, "error": "listing_not_found"},
+                    status=404
+                )
+
+            seller_id, listing_price, listing_name, listing_status = row
+
+            if listing_status != "active":
+                return web.json_response(
+                    {"ok": False, "error": "listing_closed"},
+                    status=400
+                )
+
+            if seller_id == buyer_id:
+                return web.json_response(
+                    {"ok": False, "error": "own_listing"},
+                    status=400
+                )
+
+            # Если цена пришла с клиента — используем цену самого объявления.
+            if not amount:
+                amount = str(listing_price)
+
+            cur = await db.execute("""
+                INSERT INTO trades
+                (listing_id, buyer_id, seller_id, amount, currency, status, created_at)
+                VALUES(?,?,?,?,?,?,?)
+            """, (
+                listing_id,
+                buyer_id,
+                seller_id,
+                amount,
+                currency,
+                "pending",
+                datetime.now().isoformat()
+            ))
+
+            trade_id = cur.lastrowid
+            await db.commit()
+
+        # Уведомление продавцу
+        try:
+            await telegram_notify(
+                seller_id,
+                f"🛒 Новая сделка #{trade_id}\n\n"
+                f"Товар: {listing_name}\n"
+                f"Сумма: {amount} {currency}\n"
+                f"Статус: ⏳ Ожидает оплаты"
+            )
+        except Exception:
+            pass
+
+        return web.json_response({
+            "ok": True,
+            "trade_id": trade_id,
+            "status": "pending"
+        })
+
+    except Exception as e:
+        return web.json_response(
+            {"ok": False, "error": str(e)},
+            status=500
+        )
 
 
 async def save_payment_method(request):
@@ -606,85 +622,117 @@ async def update_trade_status(request):
 
     try:
         data = await request.json()
+
         trade_id = int(data.get("trade_id", 0))
         user_id = int(data.get("user_id", 0))
-        status = str(data.get("status", "")).strip()
-    except Exception:
-        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
+        new_status = str(data.get("status", "")).strip()
 
-    allowed = {
-        "pending",
-        "paid",
-        "delivered",
-        "completed",
-        "cancelled"
-    }
+        allowed = {
+            "pending",
+            "paid",
+            "delivered",
+            "completed",
+            "cancelled"
+        }
 
-    if not trade_id or not user_id or status not in allowed:
-        return web.json_response({"ok": False, "error": "invalid_trade"}, status=400)
+        if not trade_id or not user_id or new_status not in allowed:
+            return web.json_response(
+                {"ok": False, "error": "invalid_trade"},
+                status=400
+            )
 
-    async with aiosqlite.connect(DB) as db:
-        cur = await db.execute("""
-            SELECT buyer_id, seller_id
-            FROM trades
-            WHERE id=?
-        """, (trade_id,))
-        row = await cur.fetchone()
+        async with aiosqlite.connect(DB) as db:
+            cur = await db.execute("""
+                SELECT buyer_id, seller_id, amount, currency
+                FROM trades
+                WHERE id=?
+            """, (trade_id,))
+            row = await cur.fetchone()
 
-        if not row:
-            return web.json_response({"ok": False, "error": "trade_not_found"}, status=404)
+            if not row:
+                return web.json_response(
+                    {"ok": False, "error": "trade_not_found"},
+                    status=404
+                )
 
-        if user_id not in (row[0], row[1]):
-            return web.json_response({"ok": False, "error": "access_denied"}, status=403)
+            buyer_id, seller_id, amount, currency = row
 
-        await db.execute("""
-            UPDATE trades
-            SET status=?
-            WHERE id=?
-        """, (status, trade_id))
+            # Кто имеет право менять конкретный статус
+            if new_status == "paid" and user_id != buyer_id:
+                return web.json_response(
+                    {"ok": False, "error": "buyer_only"},
+                    status=403
+                )
 
-        await db.commit()
+            if new_status == "delivered" and user_id != seller_id:
+                return web.json_response(
+                    {"ok": False, "error": "seller_only"},
+                    status=403
+                )
 
-    return web.json_response({
-        "ok": True,
-        "trade_id": trade_id,
-        "status": status
-    })
+            if new_status == "completed" and user_id != buyer_id:
+                return web.json_response(
+                    {"ok": False, "error": "buyer_only"},
+                    status=403
+                )
 
+            if new_status == "cancelled" and user_id not in (buyer_id, seller_id):
+                return web.json_response(
+                    {"ok": False, "error": "access_denied"},
+                    status=403
+                )
 
-    app.router.add_post(
-        "/api/payment-methods",
-        save_payment_method
-    )
+            await db.execute("""
+                UPDATE trades
+                SET status=?
+                WHERE id=?
+            """, (new_status, trade_id))
 
-    app.router.add_get(
-        "/api/payment-methods/{seller_id}",
-        get_payment_method
-    )
+            await db.commit()
 
-    app.router.add_delete(
-        "/api/payment-methods",
-        delete_payment_method
-    )
+        messages = {
+            "paid":
+                f"💳 Покупатель отметил оплату по сделке #{trade_id}.\n"
+                f"Сумма: {amount} {currency}\n\n"
+                f"Проверь поступление средств и передай товар.",
 
-    app.router.add_static("/", WEB)
+            "delivered":
+                f"📦 Продавец передал товар по сделке #{trade_id}.\n\n"
+                f"Проверь получение и подтверди сделку.",
 
-    runner = web.AppRunner(app)
-    await runner.setup()
+            "completed":
+                f"✅ Сделка #{trade_id} завершена.\n\n"
+                f"Спасибо за использование Atlantida Market.",
 
-    site = web.TCPSite(
-        runner,
-        "0.0.0.0",
-        int(os.getenv("PORT", "8080"))
-    )
+            "cancelled":
+                f"❌ Сделка #{trade_id} отменена."
+        }
 
-    await site.start()
+        # Уведомляем вторую сторону
+        if new_status == "paid":
+            await telegram_notify(seller_id, messages["paid"])
 
-    print("🌊 Market server started")
+        elif new_status == "delivered":
+            await telegram_notify(buyer_id, messages["delivered"])
 
-    while True:
-        await asyncio.sleep(3600)
+        elif new_status == "completed":
+            await telegram_notify(seller_id, messages["completed"])
 
+        elif new_status == "cancelled":
+            other_id = seller_id if user_id == buyer_id else buyer_id
+            await telegram_notify(other_id, messages["cancelled"])
+
+        return web.json_response({
+            "ok": True,
+            "trade_id": trade_id,
+            "status": new_status
+        })
+
+    except Exception as e:
+        return web.json_response(
+            {"ok": False, "error": str(e)},
+            status=500
+        )
 
 async def main():
     await init_db()
