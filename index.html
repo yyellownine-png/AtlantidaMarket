@@ -464,6 +464,18 @@ body:before{
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal" id="buyModal">
+  <div class="modalBox">
+    <div class="modalHead">
+      <h2>🛒 Покупка</h2>
+      <button class="close" onclick="closeBuy()">×</button>
+    </div>
+
+    <div id="buyContent"></div>
+  </div>
+</div>
+
 <div class="modal" id="paymentModal">
   <div class="modalBox">
     <div class="modalHead">
@@ -640,12 +652,100 @@ function render(){
   `).join("");
 }
 
-function buy(id){
+async function buy(id){
   const item = allListings.find(x => x.id == id);
 
   if(!item) return;
 
-  toast("🛒 Покупка товара №" + id + " скоро будет доступна");
+  const box = document.getElementById("buyContent");
+
+  box.innerHTML = `
+    <div style="padding:4px 0 18px">
+      <div style="font-size:20px;font-weight:900;margin-bottom:8px">
+        ${esc(item.name)}
+      </div>
+
+      <div style="color:#9ba6b6;font-size:13px;margin-bottom:12px">
+        ${esc(categoryName(item.category))}
+        ${item.amount ? " • Количество: " + esc(item.amount) : ""}
+      </div>
+
+      <div class="price" style="font-size:24px;margin-bottom:18px">
+        ${esc(item.price)}
+      </div>
+
+      <div id="paymentStatus"
+        style="padding:12px;border-radius:14px;background:#171d26;color:#9ba6b6;margin-bottom:14px">
+        🔎 Проверяем способ оплаты продавца...
+      </div>
+
+      <div id="paymentButtons"></div>
+    </div>
+  `;
+
+  document.getElementById("buyModal").classList.add("show");
+
+  try{
+    const response = await fetch(
+      API + "/api/payment-methods/" +
+      encodeURIComponent(item.seller_id)
+    );
+
+    if(!response.ok) throw new Error();
+
+    const payment = await response.json();
+
+    const status = document.getElementById("paymentStatus");
+    const buttons = document.getElementById("paymentButtons");
+
+    if(!payment.connected || !payment.crypto_send){
+      status.innerHTML =
+        "⚠️ Продавец пока не подключил способ оплаты.";
+
+      buttons.innerHTML = `
+        <button
+          type="button"
+          onclick="closeBuy()"
+          style="width:100%;border:0;border-radius:14px;padding:14px;background:#202833;color:#fff;font-weight:800">
+          Закрыть
+        </button>
+      `;
+
+      return;
+    }
+
+    status.innerHTML =
+      "✅ Продавец принимает оплату через Crypto Bot";
+
+    buttons.innerHTML = `
+      <a
+        href="${esc(payment.crypto_send)}"
+        target="_blank"
+        rel="noopener"
+        style="display:block;text-align:center;text-decoration:none;background:#19d37b;color:#07130d;border-radius:14px;padding:14px;font-weight:900;margin-bottom:10px">
+        🤖 Оплатить через Crypto Bot
+      </a>
+
+      <button
+        type="button"
+        onclick="markPaymentSent(${item.id})"
+        style="width:100%;border:1px solid #343d49;background:#171d26;color:#fff;border-radius:14px;padding:13px;font-weight:800">
+        ✅ Я оплатил
+      </button>
+    `;
+
+  }catch(e){
+    document.getElementById("paymentStatus").innerHTML =
+      "❌ Не удалось получить способ оплаты продавца.";
+  }
+}
+
+function closeBuy(){
+  document.getElementById("buyModal").classList.remove("show");
+}
+
+function markPaymentSent(id){
+  toast("✅ Заявка отмечена. Свяжитесь с продавцом для подтверждения оплаты.");
 }
 
 function openSell(){
@@ -834,6 +934,13 @@ document.getElementById("paymentModal")
   .addEventListener("click",e=>{
     if(e.target.id === "paymentModal"){
       closePayment();
+    }
+  });
+
+document.getElementById("buyModal")
+  .addEventListener("click",e=>{
+    if(e.target.id === "buyModal"){
+      closeBuy();
     }
   });
 
