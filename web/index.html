@@ -2017,6 +2017,11 @@ async function createListing(){
     return;
   }
 
+  if(Number(price) <= 0){
+    toast("Цена должна быть больше 0");
+    return;
+  }
+
   try{
 
     const res=await fetch(API+"/api/listings",{
@@ -2026,12 +2031,12 @@ async function createListing(){
       },
       body:JSON.stringify({
         seller_id:Number(u.id),
-        title,
-        category,
-        amount,
-        price,
-        currency,
-        description
+        title:title,
+        category:category,
+        amount:amount,
+        price:price,
+        currency:currency,
+        description:description
       })
     });
 
@@ -2047,13 +2052,24 @@ async function createListing(){
     document.getElementById("sellPrice").value="";
     document.getElementById("sellDesc").value="";
 
-    toast("Объявление опубликовано");
+    toast("✅ Товар добавлен в каталог");
 
     await loadListings();
+    renderCategories();
+    render();
+
     showPage("catalog");
+
+    setTimeout(()=>{
+      window.scrollTo({
+        top:0,
+        behavior:"smooth"
+      });
+    },100);
 
   }catch(e){
 
+    console.error("CREATE LISTING:",e);
     toast("Ошибка соединения");
 
   }
