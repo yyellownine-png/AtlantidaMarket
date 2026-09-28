@@ -757,6 +757,321 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   transform:scale(.98);
 }
 
+
+/* ===== ATLANTIDA PROFILE ===== */
+
+.profile-page{
+  display:none;
+  padding:18px 14px 110px;
+}
+
+.profile-head{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:20px;
+  border-radius:22px;
+  background:linear-gradient(135deg,rgba(35,190,255,.12),rgba(255,255,255,.035));
+  border:1px solid rgba(255,255,255,.07);
+  margin-bottom:12px;
+}
+
+.profile-avatar-wrap{
+  width:64px;
+  height:64px;
+  flex:none;
+}
+
+.profile-avatar{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:rgba(255,255,255,.08);
+  border:2px solid rgba(100,220,255,.35);
+  font-size:30px;
+}
+
+.profile-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.profile-main{
+  min-width:0;
+}
+
+.profile-name{
+  font-size:20px;
+  font-weight:950;
+  color:#fff;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.profile-username{
+  margin-top:4px;
+  color:#7f8ba5;
+  font-size:13px;
+}
+
+.profile-stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:9px;
+  margin-bottom:12px;
+}
+
+.profile-stat{
+  padding:15px 8px;
+  text-align:center;
+  border-radius:18px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06);
+}
+
+.profile-stat b{
+  display:block;
+  font-size:20px;
+  color:#fff;
+}
+
+.profile-stat span{
+  display:block;
+  margin-top:4px;
+  color:#77839d;
+  font-size:11px;
+}
+
+.profile-card{
+  margin-top:12px;
+  padding:15px;
+  border-radius:20px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06);
+}
+
+.profile-card-title{
+  margin-bottom:11px;
+  font-size:15px;
+  font-weight:900;
+  color:#fff;
+}
+
+.profile-action{
+  width:100%;
+  min-height:58px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 4px;
+  border:0;
+  border-top:1px solid rgba(255,255,255,.055);
+  background:transparent;
+  color:#fff;
+  text-align:left;
+  cursor:pointer;
+}
+
+.profile-action:first-of-type{
+  border-top:0;
+}
+
+.profile-action > span{
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+  border-radius:12px;
+  background:rgba(255,255,255,.055);
+  font-size:19px;
+}
+
+.profile-action div{
+  flex:1;
+  min-width:0;
+}
+
+.profile-action b{
+  display:block;
+  font-size:14px;
+}
+
+.profile-action small{
+  display:block;
+  margin-top:3px;
+  color:#77839d;
+  font-size:11px;
+}
+
+.profile-action strong{
+  color:#66738d;
+  font-size:24px;
+  font-weight:400;
+}
+
+.profile-label{
+  display:block;
+  margin:12px 0 6px;
+  color:#8793aa;
+  font-size:11px;
+  font-weight:700;
+}
+
+.profile-input{
+  width:100%;
+  box-sizing:border-box;
+  min-height:46px;
+  padding:0 13px;
+  border-radius:13px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.22);
+  color:#fff;
+  outline:none;
+}
+
+.profile-input:focus{
+  border-color:rgba(70,210,255,.45);
+}
+
+.wallet-status{
+  min-height:14px;
+  margin-top:5px;
+  color:#6f7d96;
+  font-size:10px;
+}
+
+.profile-save{
+  width:100%;
+  min-height:46px;
+  margin-top:10px;
+  border:0;
+  border-radius:13px;
+  background:#fff;
+  color:#000;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.profile-listings{
+  display:grid;
+  gap:8px;
+}
+
+.profile-listing{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px;
+  border-radius:13px;
+  background:rgba(255,255,255,.035);
+  cursor:pointer;
+}
+
+.profile-listing-icon{
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:11px;
+  background:rgba(255,255,255,.055);
+}
+
+.profile-listing-info{
+  flex:1;
+  min-width:0;
+}
+
+.profile-listing-title{
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.profile-listing-price{
+  margin-top:3px;
+  color:#7f8ba5;
+  font-size:11px;
+}
+
+.profile-empty{
+  padding:20px 10px;
+  text-align:center;
+  color:#77839d;
+  font-size:12px;
+}
+
+/* ===== FAVORITES ===== */
+
+#favGrid{
+  padding-bottom:100px;
+}
+
+.favorites-header{
+  padding:18px 14px 4px;
+}
+
+.favorites-title{
+  font-size:22px;
+  font-weight:950;
+  color:#fff;
+}
+
+.favorites-subtitle{
+  margin-top:5px;
+  color:#77839d;
+  font-size:12px;
+}
+
+.favorites-empty{
+  margin:30px 4px;
+  padding:35px 18px;
+  text-align:center;
+  border-radius:22px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06);
+}
+
+.favorites-empty-icon{
+  font-size:45px;
+}
+
+.favorites-empty-title{
+  margin-top:12px;
+  color:#fff;
+  font-size:16px;
+  font-weight:900;
+}
+
+.favorites-empty-text{
+  margin-top:6px;
+  color:#77839d;
+  font-size:12px;
+  line-height:1.45;
+}
+
+.favorites-empty button{
+  margin-top:16px;
+  min-height:44px;
+  padding:0 20px;
+  border:0;
+  border-radius:13px;
+  background:#fff;
+  color:#000;
+  font-weight:900;
+}
+
 </style>
 </head>
 <body>
@@ -813,18 +1128,101 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   <textarea id="sellDesc" placeholder="Описание"></textarea>
 </section>
 
-<section class="section" id="profileSection">
-  <div class="section-title"><h2>Профиль</h2></div>
-  <div id="avatar"></div>
-  <div id="profileName"></div>
-  <div id="profileUsername"></div>
-  <div id="myListings"></div>
-  <div id="favCount"></div>
-  <div id="tradeCount"></div>
-  <input id="tonWallet" placeholder="TON wallet">
-  <input id="usdtWallet" placeholder="USDT wallet">
-  <div id="tonStatus"></div>
-  <div id="usdtStatus"></div>
+<section class="profile-page" id="profileSection">
+
+  <div class="profile-head">
+    <div class="profile-avatar-wrap">
+      <div id="avatar" class="profile-avatar">👤</div>
+    </div>
+
+    <div class="profile-main">
+      <div id="profileName" class="profile-name">Игрок</div>
+      <div id="profileUsername" class="profile-username">@demo</div>
+    </div>
+  </div>
+
+  <div class="profile-stats">
+    <div class="profile-stat">
+      <b id="myListings">0</b>
+      <span>Товары</span>
+    </div>
+
+    <div class="profile-stat">
+      <b id="favCount">0</b>
+      <span>Избранное</span>
+    </div>
+
+    <div class="profile-stat">
+      <b id="tradeCount">0</b>
+      <span>Сделки</span>
+    </div>
+  </div>
+
+  <div class="profile-card">
+    <div class="profile-card-title">Мой аккаунт</div>
+
+    <button class="profile-action" type="button" onclick="showPage('catalog')">
+      <span>🛒</span>
+      <div>
+        <b>Каталог</b>
+        <small>Смотреть товары</small>
+      </div>
+      <strong>›</strong>
+    </button>
+
+    <button class="profile-action" type="button" onclick="showPage('favorites')">
+      <span>❤️</span>
+      <div>
+        <b>Избранное</b>
+        <small>Сохранённые товары</small>
+      </div>
+      <strong>›</strong>
+    </button>
+
+    <button class="profile-action" type="button" onclick="showTrades()">
+      <span>🤝</span>
+      <div>
+        <b>Мои сделки</b>
+        <small>История покупок и продаж</small>
+      </div>
+      <strong>›</strong>
+    </button>
+
+    <button class="profile-action" type="button" onclick="showPage('sell')">
+      <span>📤</span>
+      <div>
+        <b>Продать товар</b>
+        <small>Создать новое объявление</small>
+      </div>
+      <strong>›</strong>
+    </button>
+  </div>
+
+  <div class="profile-card">
+    <div class="profile-card-title">Платёжные данные</div>
+
+    <label class="profile-label">TON кошелёк</label>
+    <input id="tonWallet" class="profile-input" placeholder="Введите TON wallet">
+
+    <div id="tonStatus" class="wallet-status"></div>
+
+    <label class="profile-label">USDT кошелёк</label>
+    <input id="usdtWallet" class="profile-input" placeholder="Введите USDT wallet">
+
+    <div id="usdtStatus" class="wallet-status"></div>
+
+    <button class="profile-save" type="button" onclick="saveWallets()">
+      💾 Сохранить кошельки
+    </button>
+  </div>
+
+  <div class="profile-card">
+    <div class="profile-card-title">Мои объявления</div>
+    <div id="profileListings" class="profile-listings">
+      <div class="empty">Загрузка...</div>
+    </div>
+  </div>
+
 </section>
 
 <div id="modal"><div id="modalContent"></div></div>
@@ -919,59 +1317,132 @@ function toast(text){
 
 function showPage(page){
 
-  const homeSections = document.querySelectorAll(".hero, .searchbox, .section:not(#sellSection):not(#profileSection)");
-  const sellSection = document.getElementById("sellSection");
-  const profileSection = document.getElementById("profileSection");
-  const homeGrid = document.getElementById("homeGrid");
-  const catalogGrid = document.getElementById("catalogGrid");
-  const favGrid = document.getElementById("favGrid");
-  const homeCats = document.getElementById("homeCats");
-  const catalogCats = document.getElementById("catalogCats");
-  const marketFilters = document.getElementById("marketFilters");
+  const hero=document.querySelector(".hero");
+  const search=document.querySelector(".searchbox");
+  const sections=document.querySelectorAll(
+    ".section:not(#sellSection):not(#profileSection)"
+  );
 
-  document.querySelectorAll(".bottom-nav button").forEach((btn, i)=>{
+  const sellSection=document.getElementById("sellSection");
+  const profileSection=document.getElementById("profileSection");
+
+  const homeGrid=document.getElementById("homeGrid");
+  const catalogGrid=document.getElementById("catalogGrid");
+  const favGrid=document.getElementById("favGrid");
+
+  const homeCats=document.getElementById("homeCats");
+  const catalogCats=document.getElementById("catalogCats");
+  const marketFilters=document.getElementById("marketFilters");
+
+  /* bottom navigation */
+
+  document.querySelectorAll(".bottom-nav button").forEach((btn,i)=>{
+
     btn.classList.toggle(
       "active",
+
       (page==="home" && i===0) ||
       (page==="catalog" && i===1) ||
       (page==="favorites" && i===2) ||
       (page==="profile" && i===3)
     );
+
   });
 
-  homeSections.forEach(x=>x.style.display = page==="home" ? "" : "none");
 
-  if(homeGrid) homeGrid.style.display =
-    page==="home" ? "" : "none";
+  /* hide home */
 
-  if(homeCats) homeCats.style.display =
-    page==="home" ? "" : "none";
+  if(hero)
+    hero.style.display=page==="home" ? "" : "none";
 
-  if(catalogGrid) catalogGrid.style.display =
-    page==="catalog" ? "" : "none";
+  if(search)
+    search.style.display=
+      page==="home" || page==="catalog"
+        ? ""
+        : "none";
 
-  if(catalogCats) catalogCats.style.display =
-    page==="catalog" ? "" : "none";
 
-  if(marketFilters) marketFilters.style.display =
-    page==="catalog" ? "flex" : "none";
+  /* normal sections */
 
-  if(favGrid) favGrid.style.display =
-    page==="favorites" ? "" : "none";
+  sections.forEach(section=>{
 
-  if(sellSection) sellSection.style.display =
-    page==="sell" ? "" : "none";
+    section.style.display=
+      page==="home" || page==="catalog"
+        ? ""
+        : "none";
 
-  if(profileSection) profileSection.style.display =
-    page==="profile" ? "" : "none";
+  });
 
-  window.scrollTo(0,0);
 
-  if(page==="profile") loadProfile();
-  if(page==="favorites") renderFavorites();
-  if(page==="catalog") loadListings();
+  /* home */
+
+  if(homeGrid)
+    homeGrid.style.display=
+      page==="home" ? "" : "none";
+
+  if(homeCats)
+    homeCats.style.display=
+      page==="home" ? "" : "none";
+
+
+  /* catalog */
+
+  if(catalogGrid)
+    catalogGrid.style.display=
+      page==="catalog" ? "" : "none";
+
+  if(catalogCats)
+    catalogCats.style.display=
+      page==="catalog" ? "" : "none";
+
+  if(marketFilters)
+    marketFilters.style.display=
+      page==="catalog" ? "flex" : "none";
+
+
+  /* favorites */
+
+  if(favGrid){
+
+    favGrid.style.display=
+      page==="favorites" ? "block" : "none";
+
+    if(page==="favorites")
+      renderFavorites();
+
+  }
+
+
+  /* sell */
+
+  if(sellSection)
+    sellSection.style.display=
+      page==="sell" ? "block" : "none";
+
+
+  /* profile */
+
+  if(profileSection){
+
+    profileSection.style.display=
+      page==="profile" ? "block" : "none";
+
+    if(page==="profile")
+      loadProfile();
+
+  }
+
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+
+
+  if(page==="catalog")
+    loadListings();
+
 }
-
 
 function categoryIcon(c){
   const x=CATEGORIES.find(v=>v[0]===c);
@@ -1150,7 +1621,7 @@ function toggleFavorite(id){
     toast("Удалено из избранного");
   }else{
     favorites.push(id);
-    toast("Добавлено в избранное");
+    toast("❤️ Добавлено в избранное");
   }
 
   localStorage.setItem(
@@ -1168,186 +1639,183 @@ function renderFavorites(){
 
   const box=document.getElementById("favGrid");
 
-  const items=listings.filter(
-    x=>favorites.includes(Number(x.id))
+  if(!box) return;
+
+  const favListings=listings.filter(x =>
+    favorites.includes(Number(x.id))
   );
 
-  if(!items.length){
+  if(!favListings.length){
 
-    box.innerHTML=
-      '<div class="empty">❤️<br><br>Избранное пусто</div>';
+    box.innerHTML=`
+      <div class="favorites-header">
+        <div class="favorites-title">Избранное</div>
+        <div class="favorites-subtitle">
+          Сохранённые товары будут отображаться здесь
+        </div>
+      </div>
+
+      <div class="favorites-empty">
+
+        <div class="favorites-empty-icon">♡</div>
+
+        <div class="favorites-empty-title">
+          В избранном пока пусто
+        </div>
+
+        <div class="favorites-empty-text">
+          Нажимай на ♡ возле товара, чтобы сохранить его здесь.
+        </div>
+
+        <button type="button" onclick="showPage('catalog')">
+          Открыть каталог
+        </button>
+
+      </div>
+    `;
 
     return;
   }
 
-  box.innerHTML=items.map(card).join("");
-}
+  box.innerHTML=`
+    <div class="favorites-header">
+      <div class="favorites-title">Избранное</div>
 
-
-
-async function openSellerProfile(sellerId){
-
-  const id=Number(sellerId)||0;
-
-  if(!id){
-    toast("Продавец не найден");
-    return;
-  }
-
-  const modal=document.getElementById("modal");
-  const content=document.getElementById("modalContent");
-
-  content.innerHTML=`
-    <h2>👤 Профиль продавца</h2>
-
-    <div class="seller-profile">
-      <div class="seller-profile-head">
-
-        <div class="seller-avatar">
-          👤
-        </div>
-
-        <div>
-          <div class="seller-name">
-            Загрузка...
-          </div>
-
-          <div class="seller-username">
-            ID: ${id}
-          </div>
-        </div>
-
-      </div>
-
-      <div class="seller-stats">
-        <div class="seller-stat">
-          <b id="sellerRating">—</b>
-          <span>Рейтинг</span>
-        </div>
-
-        <div class="seller-stat">
-          <b id="sellerReviews">—</b>
-          <span>Отзывы</span>
-        </div>
-
-        <div class="seller-stat">
-          <b id="sellerSales">—</b>
-          <span>Продажи</span>
-        </div>
+      <div class="favorites-subtitle">
+        ${favListings.length}
+        ${favListings.length===1?"сохранённый товар":
+          favListings.length<5?"сохранённых товара":
+          "сохранённых товаров"}
       </div>
     </div>
 
-    <div id="sellerReviewsProfile">
-      <div class="info">
-        Загрузка отзывов...
-      </div>
+    <div class="grid">
+      ${favListings.map(card).join("")}
     </div>
   `;
-
-  modal.classList.add("show");
-
-  const reviews=await loadSellerReviews(id);
-
-  const rating=document.getElementById("sellerRating");
-  const count=document.getElementById("sellerReviews");
-  const box=document.getElementById("sellerReviewsProfile");
-
-  if(rating){
-    rating.textContent=
-      reviews.count
-        ? Number(reviews.average).toFixed(1)
-        : "—";
-  }
-
-  if(count){
-    count.textContent=Number(reviews.count||0);
-  }
-
-  if(box){
-    box.innerHTML=renderReviews(reviews);
-  }
 }
 
-async function openProduct(id){
 
-  const x=listings.find(
-    a=>Number(a.id)===Number(id)
+async function loadProfile(){
+
+  const u=user();
+
+  const name=[
+    u.first_name,
+    u.last_name
+  ].filter(Boolean).join(" ") || "Игрок";
+
+  const username=u.username
+    ? "@"+u.username
+    : "Telegram пользователь";
+
+  const nameBox=document.getElementById("profileName");
+  const usernameBox=document.getElementById("profileUsername");
+  const avatarBox=document.getElementById("avatar");
+
+  if(nameBox)
+    nameBox.textContent=name;
+
+  if(usernameBox)
+    usernameBox.textContent=username;
+
+  if(avatarBox){
+
+    if(u.photo_url){
+
+      avatarBox.innerHTML=
+        `<img src="${esc(u.photo_url)}" alt="">`;
+
+    }else{
+
+      avatarBox.textContent=
+        (name.trim()[0] || "👤").toUpperCase();
+
+    }
+  }
+
+  const mine=listings.filter(x =>
+    Number(x.seller_id)===Number(u.id)
   );
 
-  if(!x) return;
+  const myListings=document.getElementById("myListings");
 
-  const modal=document.getElementById("modal");
-  const content=document.getElementById("modalContent");
+  if(myListings)
+    myListings.textContent=mine.length;
 
-  content.innerHTML=`
+  const profileListings=
+    document.getElementById("profileListings");
 
-    <div class="detail-icon">
-      ${categoryIcon(x.category)}
-    </div>
+  if(profileListings){
 
-    <h2>${esc(x.title || x.name)}</h2>
+    if(!mine.length){
 
-    <div class="price">
-      ${esc(x.price)} ${esc(x.currency || "TON")}
-    </div>
-
-    <div class="info">
-      <b>Количество</b><br>
-      ${esc(x.amount || "1")}
-    </div>
-
-    <div class="info">
-      <b>Категория</b><br>
-      ${esc(x.category)}
-    </div>
-
-    <div class="info">
-      <b>Описание</b><br>
-      ${esc(x.description || "Без описания")}
-    </div>
-
-    <div class="info">
-      <b>Продавец</b><br>
-      ${esc(x.seller_name || "Пользователь")}
-      ${x.seller_username
-        ? " @" + esc(x.seller_username)
-        : ""}
-    </div>
-
-    <button
-      class="seller-link"
-      onclick="openSellerProfile(${Number(x.seller_id)})"
-    >
-      👤 Открыть профиль продавца
-    </button>
-
-    <div id="sellerReviewsBox">
-      <div class="reviews-summary">
-        <div class="reviews-count">
-          Загрузка рейтинга...
+      profileListings.innerHTML=`
+        <div class="profile-empty">
+          📦 У тебя пока нет объявлений
         </div>
-      </div>
-    </div>
+      `;
 
-    <button
-      class="primary"
-      style="margin-top:14px"
-      onclick="createTrade(${Number(x.id)})"
-    >
-      🤝 Создать сделку
-    </button>
-  `;
+    }else{
 
-  modal.classList.add("show");
+      profileListings.innerHTML=
+        mine.slice(0,10).map(x=>`
 
-  const reviews=await loadSellerReviews(x.seller_id);
+          <div
+            class="profile-listing"
+            onclick="openProduct(${Number(x.id)})"
+          >
 
-  const box=document.getElementById("sellerReviewsBox");
+            <div class="profile-listing-icon">
+              ${categoryIcon(x.category)}
+            </div>
 
-  if(box){
-    box.innerHTML=renderReviews(reviews);
+            <div class="profile-listing-info">
+
+              <div class="profile-listing-title">
+                ${esc(x.title || x.name || "Товар")}
+              </div>
+
+              <div class="profile-listing-price">
+                ${esc(x.price)}
+                ${esc(x.currency || "TON")}
+              </div>
+
+            </div>
+
+            <strong>›</strong>
+
+          </div>
+
+        `).join("");
+    }
+  }
+
+  await loadWallets();
+
+  updateProfileStats();
+}
+
+
+function updateProfileStats(){
+
+  const fav=document.getElementById("favCount");
+
+  if(fav)
+    fav.textContent=favorites.length;
+
+  const trades=document.getElementById("tradeCount");
+
+  if(trades){
+
+    const saved=Number(
+      localStorage.getItem("atlantida_trade_count") || 0
+    );
+
+    trades.textContent=saved;
   }
 }
+
 
 
 function closeModal(){
@@ -2184,63 +2652,6 @@ async function loadWallets(){
 
   }catch(e){}
 }
-
-
-async function loadProfile(){
-
-  const u=user();
-
-  document.getElementById("profileName").textContent =
-    u.first_name || "Игрок";
-
-  document.getElementById("profileUsername").textContent =
-    u.username ? "@"+u.username : "Telegram";
-
-  document.getElementById("avatar").textContent =
-    (u.first_name || "И")
-      .charAt(0)
-      .toUpperCase();
-
-  await loadWallets();
-  updateProfileStats();
-}
-
-
-function updateProfileStats(){
-
-  const u=user();
-
-  document.getElementById("favCount").textContent =
-    favorites.length;
-
-  const mine=listings.filter(
-    x=>Number(x.seller_id)===Number(u.id)
-  );
-
-  document.getElementById("myListings").textContent =
-    mine.length;
-
-  fetch(
-    API+"/api/trades?user_id="+
-    encodeURIComponent(u.id)
-  )
-  .then(r=>r.json())
-  .then(d=>{
-
-    const trades=Array.isArray(d.trades)
-      ? d.trades
-      : [];
-
-    document.getElementById("tradeCount")
-      .textContent=trades.length;
-
-  })
-  .catch(()=>{});
-}
-
-
-let chatTimer=null;
-let chatLoading=false;
 
 
 function getChatUser(){
