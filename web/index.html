@@ -1112,7 +1112,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   <div id="catalogCats"></div>
 </section>
 
-<section class="section">
+<section class="section" id="marketContentSection">
   <div id="homeGrid" class="grid"></div>
 
 <div id="marketFilters" class="market-filters">
@@ -1329,7 +1329,7 @@ function showPage(page){
   const hero=document.querySelector(".hero");
   const search=document.querySelector(".searchbox");
   const sections=document.querySelectorAll(
-    ".section:not(#sellSection):not(#profileSection)"
+    ".section:not(#sellSection):not(#profileSection):not(#marketContentSection)"
   );
 
   const sellSection=document.getElementById("sellSection");
@@ -1342,6 +1342,7 @@ function showPage(page){
   const homeCats=document.getElementById("homeCats");
   const catalogCats=document.getElementById("catalogCats");
   const marketFilters=document.getElementById("marketFilters");
+  const marketContentSection=document.getElementById("marketContentSection");
 
   /* bottom navigation */
 
@@ -1386,6 +1387,10 @@ function showPage(page){
 
   /* home */
 
+  if(marketContentSection)
+    marketContentSection.style.display=
+      ["home","catalog","favorites"].includes(page) ? "" : "none";
+
   if(homeGrid)
     homeGrid.style.display=
       page==="home" ? "" : "none";
@@ -1417,8 +1422,11 @@ function showPage(page){
     favGrid.style.display=
       page==="favorites" ? "block" : "none";
 
-    if(page==="favorites")
-      renderFavorites();
+    if(page==="favorites"){
+      loadListings().then(()=>{
+        renderFavorites();
+      });
+    }
 
   }
 
@@ -1633,6 +1641,9 @@ function toggleFavorite(id){
     favorites.push(id);
     toast("❤️ Добавлено в избранное");
   }
+
+  console.log("ATLANTIDA FAVORITES:", favorites);
+  console.log("ATLANTIDA STORAGE:", localStorage.getItem("atlantida_favorites"));
 
   localStorage.setItem(
     "atlantida_favorites",
