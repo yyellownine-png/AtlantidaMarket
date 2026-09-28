@@ -475,6 +475,101 @@ textarea{min-height:100px;resize:vertical}
     cursor:pointer;
 }
 </style>
+
+<style>
+.public-chat-btn{
+ width:100%;
+ margin-top:12px;
+ padding:13px;
+ border-radius:12px;
+ background:linear-gradient(135deg,#4d8dff,#2563eb);
+ font-weight:900;
+}
+.chat-overlay{
+ position:fixed;
+ inset:0;
+ z-index:100;
+ background:rgba(0,0,0,.72);
+ display:none;
+ align-items:flex-end;
+}
+.chat-overlay.active{display:flex}
+.chat-box{
+ width:100%;
+ max-height:88vh;
+ background:#0b0f15;
+ border:1px solid #242b36;
+ border-radius:22px 22px 0 0;
+ display:flex;
+ flex-direction:column;
+ overflow:hidden;
+}
+.chat-head{
+ padding:15px 16px;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ border-bottom:1px solid #242b36;
+}
+.chat-head b{font-size:17px}
+.chat-close{
+ width:34px;
+ height:34px;
+ border-radius:50%;
+ background:#1a202a;
+ font-size:18px;
+}
+.chat-messages{
+ height:55vh;
+ overflow-y:auto;
+ padding:14px;
+ display:flex;
+ flex-direction:column;
+ gap:8px;
+}
+.chat-msg{
+ max-width:82%;
+ padding:9px 11px;
+ border-radius:14px;
+ background:#151b24;
+ align-self:flex-start;
+ word-break:break-word;
+}
+.chat-msg.mine{
+ background:#2563eb;
+ align-self:flex-end;
+}
+.chat-user{
+ font-size:10px;
+ color:#8fa0b8;
+ margin-bottom:3px;
+}
+.chat-msg.mine .chat-user{color:#c9dcff}
+.chat-time{
+ font-size:9px;
+ opacity:.6;
+ margin-top:4px;
+ text-align:right;
+}
+.chat-input{
+ display:flex;
+ gap:8px;
+ padding:10px;
+ border-top:1px solid #242b36;
+ background:#0b0f15;
+}
+.chat-input input{
+ flex:1;
+ margin:0;
+}
+.chat-send{
+ width:48px;
+ border-radius:12px;
+ background:#2563eb;
+ font-size:18px;
+}
+</style>
+
 </head>
 <body>
 
@@ -597,7 +692,12 @@ textarea{min-height:100px;resize:vertical}
    <div class="menu-icon">📦</div>
    <div><b>Мои объявления</b><small>Управление товарами</small></div>
   </div>
-  <div class="menu-item" onclick="showTrades('buy')">
+
+<div class="menu-item public-chat-btn" onclick="openPublicChat()">
+ <div><b>💬 Загальний чат</b><small>Спілкування користувачів Market</small></div>
+</div>
+
+<div class="menu-item" onclick="showTrades('buy')">
    <div class="menu-icon">🛍️</div>
    <div><b>Мои покупки</b><small>История покупок</small></div>
   </div>
@@ -1486,5 +1586,165 @@ function escapeHTML(s){
 loadListings();
 loadWallets();
 </script>
+
+<div id="publicChatOverlay" class="chat-overlay">
+ <div class="chat-box">
+  <div class="chat-head">
+   <b>💬 Загальний чат</b>
+   <button class="chat-close" onclick="closePublicChat()">×</button>
+  </div>
+
+  <div id="publicChatMessages" class="chat-messages">
+   <div class="empty">Завантаження...</div>
+  </div>
+
+  <div class="chat-input">
+   <input id="publicChatInput" type="text" maxlength="500"
+          placeholder="Написати повідомлення..."
+          onkeydown="if(event.key==='Enter') sendPublicMessage()">
+   <button class="chat-send" onclick="sendPublicMessage()">➤</button>
+  </div>
+ </div>
+</div>
+
+
+<script>
+let publicChatTimer = null;
+
+function getChatUser(){
+ const tg = window.Telegram && Telegram.WebApp ? Telegram.WebApp : null;
+ const u = tg && tg.initDataUnsafe ? tg.initDataUnsafe.user : null;
+
+ return {
+   id: u && u.id ? u.id : 123,
+   username: u && u.username ? u.username : "",
+   first_name: u && u.first_name ? u.first_name : "Користувач"
+ };
+}
+
+async function openPublicChat(){
+ const overlay = document.getElementById("publicChatOverlay");
+ if(!overlay) return;
+
+ overlay.classList.add("active");
+ await loadPublicChat();
+
+ if(publicChatTimer) clearInterval(publicChatTimer);
+ publicChatTimer = setInterval(loadPublicChat, 3000);
+
+ setTimeout(()=>{
+   const input = document.getElementById("publicChatInput");
+   if(input) input.focus();
+ },100);
+}
+
+function closePublicChat(){
+ const overlay = document.getElementById("publicChatOverlay");
+ if(overlay) overlay.classList.remove("active");
+
+ if(publicChatTimer){
+   clearInterval(publicChatTimer);
+   publicChatTimer = null;
+ }
+}
+
+async function loadPublicChat(){
+ try{
+   const user = getChatUser();
+
+   const res = await fetch("/api/chat?user_id=" + encodeURIComponent(user.id));
+   const data = await res.json();
+
+   if(!data.ok) throw new Error(data.error || "Ошибка");
+
+   const box = document.getElementById("publicChatMessages");
+   if(!box) return;
+
+   if(!data.messages || !data.messages.length){
+     box.innerHTML = '<div class="empty">Поки що повідомлень немає.<br>Напиши першим 👋</div>';
+     return;
+   }
+
+   box.innerHTML = data.messages.map(m=>{
+     const mine = Number(m.user_id) === Number(user.id);
+     const name = m.username
+       ? "@" + escapeChatHtml(m.username)
+       : escapeChatHtml(m.first_name || "Користувач");
+
+     return `
+       <div class="chat-msg ${mine ? "mine" : ""}">
+         <div class="chat-user">${name}</div>
+         <div>${escapeChatHtml(m.text)}</div>
+         <div class="chat-time">${formatChatTime(m.created_at)}</div>
+       </div>
+     `;
+   }).join("");
+
+   box.scrollTop = box.scrollHeight;
+
+ }catch(e){
+   console.error("Public chat:", e);
+ }
+}
+
+async function sendPublicMessage(){
+ const input = document.getElementById("publicChatInput");
+ if(!input) return;
+
+ const text = input.value.trim();
+ if(!text) return;
+
+ const user = getChatUser();
+
+ try{
+   const res = await fetch("/api/chat",{
+     method:"POST",
+     headers:{"Content-Type":"application/json"},
+     body:JSON.stringify({
+       user_id:user.id,
+       username:user.username,
+       first_name:user.first_name,
+       text:text
+     })
+   });
+
+   const data = await res.json();
+
+   if(!data.ok){
+     alert(data.error || "Не вдалося відправити повідомлення");
+     return;
+   }
+
+   input.value = "";
+   await loadPublicChat();
+   input.focus();
+
+ }catch(e){
+   alert("Помилка підключення до чату");
+   console.error(e);
+ }
+}
+
+function escapeChatHtml(value){
+ return String(value ?? "")
+   .replace(/&/g,"&amp;")
+   .replace(/</g,"&lt;")
+   .replace(/>/g,"&gt;")
+   .replace(/"/g,"&quot;")
+   .replace(/'/g,"&#039;");
+}
+
+function formatChatTime(value){
+ if(!value) return "";
+ const d = new Date(value.replace(" ","T")+"Z");
+ if(isNaN(d.getTime())) return "";
+
+ return d.toLocaleTimeString([],{
+   hour:"2-digit",
+   minute:"2-digit"
+ });
+}
+</script>
+
 </body>
 </html>

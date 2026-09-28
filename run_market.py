@@ -582,29 +582,6 @@ async def send_public_chat(request):
     })
 
 
-async def start_server():
-
-    app = web.Application()
-
-    app.router.add_get("/", index)
-    app.router.add_get("/api/listings", listings)
-    app.router.add_post("/api/listings", create_listing)
-    app.router.add_post("/api/trades", create_trade)
-
-    app.router.add_get(
-        "/api/chat",
-        get_public_chat
-    )
-
-    app.router.add_post(
-        "/api/chat",
-        send_public_chat
-    )
-
-app.router.add_get("/api/reviews", get_reviews)
-app.router.add_post("/api/reviews", create_review)
-
-
 
 async def get_reviews(request):
     import aiosqlite
@@ -717,9 +694,6 @@ async def create_review(request):
         "seller_id": seller_id,
         "rating": rating
     })
-
-app.router.add_get("/api/trades", get_trades)
-app.router.add_patch("/api/trades/status", update_trade_status)
 
 
 
@@ -894,6 +868,57 @@ async def update_trade_status(request):
             status=500
         )
 
+
+async def start_server():
+    app = web.Application()
+
+    app.router.add_get("/", index)
+    app.router.add_get("/api/listings", listings)
+    app.router.add_post("/api/listings", create_listing)
+
+    app.router.add_post("/api/trades", create_trade)
+
+    app.router.add_get("/api/chat", get_public_chat)
+    app.router.add_post("/api/chat", send_public_chat)
+
+    app.router.add_get("/api/reviews", get_reviews)
+    app.router.add_post("/api/reviews", create_review)
+
+    app.router.add_get("/api/trades", get_trades)
+    app.router.add_patch("/api/trades/status", update_trade_status)
+
+    app.router.add_post(
+        "/api/payment-methods",
+        save_payment_method
+    )
+
+    app.router.add_get(
+        "/api/payment-methods/{seller_id}",
+        get_payment_method
+    )
+
+    app.router.add_delete(
+        "/api/payment-methods",
+        delete_payment_method
+    )
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+
+    site = web.TCPSite(
+        runner,
+        "0.0.0.0",
+        int(os.getenv("PORT", "8080"))
+    )
+
+    await site.start()
+
+    print("Atlantida Market server started")
+
+    while True:
+        await asyncio.sleep(3600)
+
+
 async def main():
     await init_db()
     await start_server()
@@ -901,6 +926,3 @@ async def main():
 
 if __name__=="__main__":
     asyncio.run(main())
-
-
-set_menu_button("https://atlantidamarket.onrender.com")
