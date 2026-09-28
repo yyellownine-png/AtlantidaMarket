@@ -32,10 +32,22 @@ async def init_db():
                 seller_id INTEGER PRIMARY KEY,
                 crypto_send TEXT,
                 ton_wallet TEXT,
+                usdt_wallet TEXT,
                 card_info TEXT,
                 updated_at TEXT
             )
         """)
+
+        # Миграция старой БД: добавляем USDT ERC-20, если колонки ещё нет
+        async with db.execute(
+            "PRAGMA table_info(seller_payment_methods)"
+        ) as cur:
+            columns = [row[1] for row in await cur.fetchall()]
+
+        if "usdt_wallet" not in columns:
+            await db.execute(
+                "ALTER TABLE seller_payment_methods ADD COLUMN usdt_wallet TEXT"
+            )
 
         await db.execute("""
             CREATE TABLE IF NOT EXISTS listings (
