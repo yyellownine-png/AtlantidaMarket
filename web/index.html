@@ -3,114 +3,1087 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#07111f">
+<meta name="theme-color" content="#07080d">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Atlantida Market</title>
 
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;background:#050914;color:#f5f7fb}
-body{padding-bottom:85px}
-button,input,textarea,select{font:inherit}
-button{cursor:pointer}
-.top{padding:18px 15px 14px;background:linear-gradient(145deg,#07172d,#08111f);border-bottom:1px solid #17263a;position:sticky;top:0;z-index:10}
-.logo{font-size:23px;font-weight:900}
-.logo span{color:#4da3ff}
-.sub{font-size:12px;color:#8493a8;margin-top:4px}
-.search{height:45px;margin-top:14px;border:1px solid #21344c;background:#0d1827;border-radius:15px;display:flex;align-items:center;padding:0 13px;gap:8px}
-.search input{border:0;outline:0;background:none;color:#fff;width:100%}
-.container{max-width:760px;margin:auto;padding:14px}
-.page{display:none}
-.page.active{display:block}
-.hero{padding:22px;border-radius:25px;background:linear-gradient(135deg,#0b3970,#182b63 55%,#321c69);border:1px solid #2e68a8;box-shadow:0 15px 45px #0006}
-.hero small{color:#7bc4ff;font-weight:800}
-.hero h1{font-size:28px;line-height:1.1;margin:10px 0}
-.hero p{color:#c1d0e5;line-height:1.5}
-.primary,.hero button{border:0;background:linear-gradient(135deg,#168cff,#625cff);color:#fff;padding:13px 17px;border-radius:14px;font-weight:800;width:100%}
-.section-head{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 11px}
-.section-head h2{margin:0;font-size:19px}
-.section-head span{color:#64b4ff;font-size:13px}
-.cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
-.cat{white-space:nowrap;border:1px solid #23344a;background:#0c1726;color:#dce8f7;padding:10px 13px;border-radius:13px}
-.cat.active{background:#1769b5;border-color:#3fa5ff}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.card{position:relative;background:linear-gradient(145deg,#0e1928,#0a111c);border:1px solid #1c3047;border-radius:18px;padding:13px;min-height:155px}
-.card-icon{height:70px;border-radius:15px;background:linear-gradient(135deg,#123d68,#25205c);display:flex;align-items:center;justify-content:center;font-size:32px}
-.card h3{font-size:14px;margin:10px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.meta{font-size:11px;color:#8493a8}
-.price{font-size:16px;font-weight:900;color:#62b5ff;margin-top:8px}
-.fav{position:absolute;right:9px;top:9px;border:0;background:#0008;color:#fff;border-radius:50%;width:32px;height:32px}
-.empty{padding:40px 15px;text-align:center;color:#78889d}
-.form,.wallet,.menu-card{background:#0c1623;border:1px solid #1b2c41;border-radius:18px;padding:15px;margin-bottom:12px}
-.form label{display:block;font-size:12px;color:#8fa1b7;margin:12px 0 6px}
-.form input,.form textarea,.form select,.wallet input{width:100%;border:1px solid #26394f;background:#101d2d;color:#fff;border-radius:12px;padding:12px;outline:0}
-.form textarea{min-height:100px;resize:vertical}
-.profile{text-align:center;padding:18px 0}
-.avatar{width:75px;height:75px;border-radius:50%;margin:auto;background:linear-gradient(135deg,#1587ff,#773cff);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900}
-.profile h2{margin:10px 0 3px}.profile p{margin:0;color:#8090a5}
-.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px}
-.stat{background:#0c1623;border:1px solid #1b2c41;border-radius:15px;padding:13px;text-align:center}
-.stat b{display:block;font-size:20px}.stat span{font-size:10px;color:#8090a5}
-.wallet-title{font-weight:900}.wallet-status{font-size:11px;color:#6fc0ff;margin-top:3px}
-.menu-item{display:flex;align-items:center;gap:12px;padding:14px 3px;border-bottom:1px solid #18283a}
-.menu-item:last-child{border-bottom:0}
-.menu-icon{width:38px;height:38px;border-radius:12px;background:#14253a;display:flex;align-items:center;justify-content:center}
-.menu-item b{display:block}.menu-item small{color:#74869d}
-.bottom{position:fixed;left:0;right:0;bottom:0;height:72px;background:#07101cfa;border-top:1px solid #1a2b3e;display:flex;z-index:50;backdrop-filter:blur(14px)}
-.nav{flex:1;border:0;background:none;color:#718399;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
-.nav b{font-size:20px}.nav.active{color:#5db6ff}
-.modal{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:100}
-.modal.show{display:flex}
-.sheet{width:100%;max-height:90vh;overflow:auto;background:#09121f;border-radius:24px 24px 0 0;padding:18px;position:relative;border:1px solid #26384d}
-.close{position:absolute;right:13px;top:12px;border:0;background:#172333;color:#fff;border-radius:50%;width:36px;height:36px}
-.detail-icon{height:120px;border-radius:20px;background:linear-gradient(135deg,#123d68,#34206c);display:flex;align-items:center;justify-content:center;font-size:55px}
-.info{background:#0e1b2a;border-radius:14px;padding:13px;margin-top:10px}
-.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#152438;color:#fff;padding:11px 15px;border-radius:12px;display:none;z-index:200}
-.chat-overlay{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:150}
-.chat-overlay.active{display:flex}
-.chat-box{width:100%;max-width:760px;margin:auto 0 0;max-height:92vh;background:#09121f;border:1px solid #263142;border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -15px 50px #0008}
-.chat-head{height:60px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #202936;background:#0d1724}
-.chat-head-left{display:flex;align-items:center;gap:10px}
-.chat-head-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#168cff,#613cff);font-size:19px}
-.chat-head-title b{display:block}.chat-head-title small{font-size:11px;color:#7f8da3}
-.chat-close{width:36px;height:36px;border:0;border-radius:50%;background:#1a2736;color:#fff;font-size:23px}
-.chat-messages{height:62vh;min-height:300px;overflow-y:auto;padding:15px 11px;display:flex;flex-direction:column;gap:7px}
-.chat-row{display:flex;align-items:flex-end;gap:7px}
-.chat-row.mine{justify-content:flex-end}
-.chat-avatar{width:34px;height:34px;border-radius:50%;background:#24364c;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-weight:800}
-.chat-avatar img{width:100%;height:100%;object-fit:cover}
-.chat-content{max-width:78%}
-.chat-user{font-size:11px;font-weight:800;color:#66a3ff;margin:0 5px 3px}
-.chat-msg{padding:8px 11px 6px;border-radius:16px 16px 16px 5px;background:#17202b;word-break:break-word;line-height:1.35;font-size:14px}
-.chat-row.mine .chat-msg{background:#2563eb;border-radius:16px 16px 5px 16px}
-.chat-time{font-size:9px;opacity:.62;margin-left:7px}
-.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #202936}
-.chat-input input{flex:1;height:44px;border:1px solid #293544;background:#151c26;color:#fff;border-radius:22px;padding:0 15px;outline:0}
-.chat-send{width:44px;height:44px;border:0;border-radius:50%;background:#2563eb;color:#fff;font-size:19px}
-@media(max-width:420px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h1{font-size:24px}}
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent
+}
+
+:root{
+  --bg:#05060a;
+  --bg2:#080a10;
+  --panel:#0c0f17;
+  --panel2:#10141e;
+  --panel3:#141923;
+  --line:rgba(255,255,255,.075);
+  --line2:rgba(255,255,255,.12);
+  --text:#f7f8fc;
+  --muted:#858da0;
+  --muted2:#5f6677;
+  --blue:#4f8cff;
+  --blue2:#6c5cff;
+  --cyan:#35d7ff;
+  --green:#36e59a;
+  --yellow:#ffd75a;
+  --red:#ff5577;
+  --radius:22px;
+  --shadow:0 18px 60px rgba(0,0,0,.35)
+}
+
+html,body{
+  margin:0;
+  min-height:100%;
+  background:
+    radial-gradient(circle at 10% -5%,rgba(76,105,255,.17),transparent 30%),
+    radial-gradient(circle at 95% 5%,rgba(0,211,255,.08),transparent 25%),
+    var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+}
+
+body{
+  padding-bottom:96px;
+  overflow-x:hidden
+}
+
+button,input,textarea,select{
+  font:inherit
+}
+
+button{
+  cursor:pointer;
+  color:inherit
+}
+
+button:active{
+  transform:scale(.98)
+}
+
+.top{
+  position:sticky;
+  top:0;
+  z-index:40;
+  padding:
+    calc(13px + env(safe-area-inset-top))
+    16px
+    13px;
+  background:rgba(5,6,10,.84);
+  backdrop-filter:blur(24px) saturate(150%);
+  -webkit-backdrop-filter:blur(24px) saturate(150%);
+  border-bottom:1px solid rgba(255,255,255,.06)
+}
+
+.top-inner{
+  max-width:760px;
+  margin:auto
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:21px;
+  font-weight:950;
+  letter-spacing:-.7px
+}
+
+.logo-mark{
+  width:35px;
+  height:35px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    linear-gradient(135deg,#5f8cff,#684cff 55%,#20d8ff);
+  box-shadow:
+    0 8px 30px rgba(79,140,255,.35),
+    inset 0 1px 0 rgba(255,255,255,.4);
+  font-size:18px
+}
+
+.logo span{
+  background:linear-gradient(90deg,#fff,#74a5ff,#5ce2ff);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent
+}
+
+.sub{
+  margin:4px 0 0 45px;
+  color:#727b90;
+  font-size:11px;
+  font-weight:600
+}
+
+.search{
+  height:48px;
+  margin-top:14px;
+  padding:0 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid var(--line2);
+  background:rgba(18,21,30,.8);
+  border-radius:16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)
+}
+
+.search-icon{
+  color:#7e8ba4;
+  font-size:18px
+}
+
+.search input{
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#fff;
+  width:100%;
+  font-size:14px
+}
+
+.search input::placeholder{
+  color:#60697a
+}
+
+.container{
+  max-width:760px;
+  margin:auto;
+  padding:16px
+}
+
+.page{
+  display:none;
+  animation:pageIn .25s ease
+}
+
+.page.active{
+  display:block
+}
+
+@keyframes pageIn{
+  from{opacity:0;transform:translateY(7px)}
+  to{opacity:1;transform:none}
+}
+
+/* HERO */
+
+.hero{
+  position:relative;
+  overflow:hidden;
+  padding:25px 21px 22px;
+  border-radius:27px;
+  min-height:245px;
+  background:
+    radial-gradient(circle at 90% 15%,rgba(49,216,255,.22),transparent 24%),
+    radial-gradient(circle at 15% 90%,rgba(111,75,255,.3),transparent 35%),
+    linear-gradient(135deg,#111d43,#11152a 52%,#0d2434);
+  border:1px solid rgba(120,157,255,.2);
+  box-shadow:
+    0 25px 80px rgba(41,69,180,.18),
+    inset 0 1px 0 rgba(255,255,255,.07)
+}
+
+.hero:after{
+  content:"";
+  position:absolute;
+  width:180px;
+  height:180px;
+  right:-75px;
+  bottom:-90px;
+  border-radius:50%;
+  background:rgba(40,216,255,.18);
+  filter:blur(35px)
+}
+
+.hero small{
+  position:relative;
+  z-index:1;
+  color:#76c9ff;
+  font-size:10px;
+  letter-spacing:1.8px;
+  font-weight:900
+}
+
+.hero h1{
+  position:relative;
+  z-index:1;
+  max-width:520px;
+  margin:10px 0 9px;
+  font-size:31px;
+  line-height:1.04;
+  letter-spacing:-1.4px
+}
+
+.hero p{
+  position:relative;
+  z-index:1;
+  max-width:530px;
+  color:#aab7ce;
+  line-height:1.45;
+  font-size:13px;
+  margin:0 0 18px
+}
+
+.hero button{
+  position:relative;
+  z-index:2;
+  width:auto;
+  min-width:190px
+}
+
+/* BUTTONS */
+
+.primary,
+.hero button{
+  border:0;
+  color:#fff;
+  padding:13px 18px;
+  border-radius:15px;
+  font-weight:850;
+  background:
+    linear-gradient(135deg,#568dff,#7254ff 60%,#27cfff);
+  box-shadow:
+    0 10px 30px rgba(77,105,255,.24),
+    inset 0 1px 0 rgba(255,255,255,.25);
+  transition:.2s
+}
+
+.primary:hover,
+.hero button:hover{
+  filter:brightness(1.08)
+}
+
+/* HEADERS */
+
+.section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:24px 2px 12px
+}
+
+.section-head h2{
+  margin:0;
+  font-size:18px;
+  letter-spacing:-.5px
+}
+
+.section-head span{
+  color:#7fa9ff;
+  font-size:12px;
+  font-weight:750
+}
+
+/* CATEGORIES */
+
+.cats{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding:2px 1px 6px;
+  scrollbar-width:none
+}
+
+.cats::-webkit-scrollbar{
+  display:none
+}
+
+.cat{
+  flex:0 0 auto;
+  border:1px solid var(--line2);
+  background:rgba(16,19,28,.85);
+  color:#aeb7c9;
+  padding:9px 13px;
+  border-radius:13px;
+  font-size:11px;
+  font-weight:800;
+  transition:.2s
+}
+
+.cat.active{
+  color:#fff;
+  border-color:rgba(102,145,255,.55);
+  background:linear-gradient(135deg,#315fc5,#493cb1);
+  box-shadow:0 7px 24px rgba(67,85,210,.2)
+}
+
+/* GRID */
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px
+}
+
+.card{
+  position:relative;
+  overflow:hidden;
+  min-height:190px;
+  padding:10px;
+  border-radius:21px;
+  background:
+    linear-gradient(145deg,rgba(19,23,33,.98),rgba(9,11,17,.98));
+  border:1px solid rgba(255,255,255,.075);
+  box-shadow:
+    0 12px 35px rgba(0,0,0,.2),
+    inset 0 1px 0 rgba(255,255,255,.035);
+  transition:transform .2s,border-color .2s,box-shadow .2s
+}
+
+.card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(100,142,255,.3);
+  box-shadow:0 18px 45px rgba(0,0,0,.32)
+}
+
+.card:after{
+  content:"";
+  position:absolute;
+  width:100px;
+  height:100px;
+  right:-65px;
+  top:-65px;
+  border-radius:50%;
+  background:rgba(73,110,255,.08);
+  filter:blur(15px)
+}
+
+.card-icon{
+  height:105px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:43px;
+  background:
+    radial-gradient(circle at 50% 20%,rgba(95,149,255,.22),transparent 45%),
+    linear-gradient(145deg,#151f36,#171426);
+  border:1px solid rgba(255,255,255,.055);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
+}
+
+.card h3{
+  position:relative;
+  z-index:1;
+  font-size:13px;
+  margin:11px 3px 5px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  letter-spacing:-.15px
+}
+
+.meta{
+  color:#697388;
+  font-size:10px;
+  margin:0 3px
+}
+
+.price{
+  color:#6da2ff;
+  font-size:16px;
+  font-weight:950;
+  margin:8px 3px 0;
+  letter-spacing:-.2px
+}
+
+.fav{
+  position:absolute;
+  z-index:5;
+  right:17px;
+  top:17px;
+  width:33px;
+  height:33px;
+  border:1px solid rgba(255,255,255,.09);
+  background:rgba(5,7,11,.68);
+  backdrop-filter:blur(10px);
+  color:#fff;
+  border-radius:50%;
+  font-size:14px
+}
+
+/* EMPTY */
+
+.empty{
+  grid-column:1/-1;
+  padding:50px 18px;
+  text-align:center;
+  color:#687287;
+  font-size:13px;
+  line-height:1.5
+}
+
+/* FORMS */
+
+.form,
+.wallet,
+.menu-card{
+  background:
+    linear-gradient(145deg,rgba(15,18,27,.98),rgba(9,11,17,.98));
+  border:1px solid var(--line);
+  border-radius:21px;
+  padding:16px;
+  margin-bottom:12px;
+  box-shadow:0 14px 40px rgba(0,0,0,.18)
+}
+
+.form label{
+  display:block;
+  margin:13px 0 7px;
+  color:#7f899c;
+  font-size:11px;
+  font-weight:750
+}
+
+.form input,
+.form textarea,
+.form select,
+.wallet input{
+  width:100%;
+  border:1px solid rgba(255,255,255,.08);
+  background:#0c1018;
+  color:#fff;
+  border-radius:14px;
+  padding:13px;
+  outline:0;
+  transition:.2s
+}
+
+.form input:focus,
+.form textarea:focus,
+.form select:focus,
+.wallet input:focus{
+  border-color:rgba(89,135,255,.6);
+  box-shadow:0 0 0 3px rgba(76,113,255,.08)
+}
+
+.form textarea{
+  min-height:105px;
+  resize:vertical
+}
+
+.form .primary{
+  margin-top:17px
+}
+
+/* PROFILE */
+
+.profile{
+  position:relative;
+  overflow:hidden;
+  text-align:center;
+  padding:24px 15px 20px;
+  border-radius:24px;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(86,125,255,.2),transparent 45%),
+    linear-gradient(145deg,#111722,#0b0e15);
+  border:1px solid var(--line)
+}
+
+.avatar{
+  width:78px;
+  height:78px;
+  border-radius:26px;
+  margin:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:29px;
+  font-weight:950;
+  background:
+    linear-gradient(135deg,#5b8cff,#684cff 55%,#29d7ff);
+  box-shadow:
+    0 14px 40px rgba(72,102,255,.3),
+    inset 0 1px 0 rgba(255,255,255,.35)
+}
+
+.profile h2{
+  margin:12px 0 3px;
+  font-size:20px;
+  letter-spacing:-.5px
+}
+
+.profile p{
+  margin:0;
+  color:#737d91;
+  font-size:12px
+}
+
+.statgrid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:12px 0
+}
+
+.stat{
+  background:linear-gradient(145deg,#10141d,#0b0e14);
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:14px 8px;
+  text-align:center
+}
+
+.stat b{
+  display:block;
+  font-size:20px;
+  letter-spacing:-.5px
+}
+
+.stat span{
+  display:block;
+  margin-top:3px;
+  color:#687287;
+  font-size:9px;
+  font-weight:700
+}
+
+.wallet-title{
+  font-weight:850;
+  font-size:13px
+}
+
+.wallet-status{
+  margin-top:4px;
+  margin-bottom:9px;
+  color:#3ee5a0;
+  font-size:10px;
+  font-weight:700
+}
+
+.menu-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:63px;
+  padding:10px 3px;
+  border-bottom:1px solid rgba(255,255,255,.055)
+}
+
+.menu-item:last-child{
+  border-bottom:0
+}
+
+.menu-icon{
+  width:42px;
+  height:42px;
+  flex:0 0 42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:14px;
+  background:linear-gradient(145deg,#172139,#111725);
+  border:1px solid rgba(255,255,255,.06);
+  font-size:18px
+}
+
+.menu-item b{
+  display:block;
+  font-size:13px
+}
+
+.menu-item small{
+  display:block;
+  margin-top:3px;
+  color:#687287;
+  font-size:10px
+}
+
+/* BOTTOM NAV */
+
+.bottom{
+  position:fixed;
+  z-index:80;
+  left:8px;
+  right:8px;
+  bottom:calc(8px + env(safe-area-inset-bottom));
+  height:70px;
+  display:flex;
+  max-width:744px;
+  margin:auto;
+  padding:5px;
+  background:rgba(13,16,23,.91);
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:23px;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,.05)
+}
+
+.nav{
+  position:relative;
+  flex:1;
+  border:0;
+  background:none;
+  color:#626b7d;
+  font-size:9px;
+  font-weight:750;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  border-radius:18px;
+  transition:.2s
+}
+
+.nav b{
+  font-size:19px;
+  line-height:20px;
+  filter:grayscale(1);
+  opacity:.7
+}
+
+.nav.active{
+  color:#fff;
+  background:linear-gradient(145deg,rgba(77,126,255,.22),rgba(83,64,214,.16));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
+}
+
+.nav.active b{
+  filter:none;
+  opacity:1
+}
+
+/* MODAL */
+
+.modal{
+  position:fixed;
+  z-index:100;
+  inset:0;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(8px);
+  display:none;
+  align-items:flex-end
+}
+
+.modal.show{
+  display:flex
+}
+
+.sheet{
+  width:100%;
+  max-width:760px;
+  max-height:91vh;
+  overflow:auto;
+  margin:auto auto 0;
+  padding:20px 17px calc(25px + env(safe-area-inset-bottom));
+  position:relative;
+  border-radius:27px 27px 0 0;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(73,112,255,.1),transparent 30%),
+    #0a0d14;
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 -25px 80px rgba(0,0,0,.55)
+}
+
+.sheet:before{
+  content:"";
+  position:absolute;
+  width:42px;
+  height:4px;
+  top:8px;
+  left:50%;
+  transform:translateX(-50%);
+  border-radius:10px;
+  background:#343b4a
+}
+
+.close{
+  position:absolute;
+  right:13px;
+  top:14px;
+  width:36px;
+  height:36px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#171c27;
+  color:#fff;
+  border-radius:50%;
+  font-size:14px;
+  z-index:5
+}
+
+.detail-icon{
+  height:150px;
+  margin-bottom:16px;
+  border-radius:21px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:65px;
+  background:
+    radial-gradient(circle at 50% 15%,rgba(87,145,255,.25),transparent 45%),
+    linear-gradient(145deg,#151f35,#171329);
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)
+}
+
+.sheet h2{
+  margin:5px 42px 7px 0;
+  font-size:22px;
+  letter-spacing:-.7px
+}
+
+.info{
+  background:linear-gradient(145deg,#10151f,#0c1017);
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:16px;
+  padding:13px;
+  margin-top:9px;
+  color:#aeb7c8;
+  font-size:12px;
+  line-height:1.45
+}
+
+.info b{
+  color:#fff
+}
+
+.sheet .price{
+  font-size:22px;
+  margin:0 0 13px
+}
+
+/* TOAST */
+
+.toast{
+  position:fixed;
+  z-index:300;
+  left:50%;
+  bottom:94px;
+  transform:translateX(-50%) translateY(10px);
+  max-width:calc(100vw - 35px);
+  padding:12px 17px;
+  border-radius:15px;
+  background:rgba(25,29,40,.95);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 15px 45px rgba(0,0,0,.45);
+  color:#fff;
+  font-size:12px;
+  font-weight:750;
+  display:none;
+  backdrop-filter:blur(15px)
+}
+
+/* CHAT */
+
+.chat-overlay{
+  position:fixed;
+  z-index:150;
+  inset:0;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(8px);
+  display:none;
+  align-items:flex-end
+}
+
+.chat-overlay.active{
+  display:flex
+}
+
+.chat-box{
+  width:100%;
+  max-width:760px;
+  max-height:94vh;
+  margin:auto auto 0;
+  background:#090c13;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:27px 27px 0 0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-shadow:0 -25px 80px rgba(0,0,0,.55)
+}
+
+.chat-head{
+  height:67px;
+  padding:0 15px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  background:rgba(15,18,26,.92)
+}
+
+.chat-head-left{
+  display:flex;
+  align-items:center;
+  gap:10px
+}
+
+.chat-head-avatar{
+  width:40px;
+  height:40px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,#548bff,#6c4fff);
+  box-shadow:0 8px 25px rgba(78,110,255,.25);
+  font-size:19px
+}
+
+.chat-head-title b{
+  display:block;
+  font-size:14px
+}
+
+.chat-head-title small{
+  display:block;
+  margin-top:2px;
+  font-size:10px;
+  color:#6d778b
+}
+
+.chat-close{
+  width:37px;
+  height:37px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:50%;
+  background:#171c26;
+  color:#fff;
+  font-size:22px
+}
+
+.chat-messages{
+  height:63vh;
+  min-height:300px;
+  overflow-y:auto;
+  padding:15px 11px;
+  display:flex;
+  flex-direction:column;
+  gap:8px
+}
+
+.chat-row{
+  display:flex;
+  align-items:flex-end;
+  gap:7px
+}
+
+.chat-row.mine{
+  justify-content:flex-end
+}
+
+.chat-avatar{
+  width:35px;
+  height:35px;
+  flex:0 0 35px;
+  border-radius:12px;
+  background:#182131;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  font-weight:850;
+  font-size:12px
+}
+
+.chat-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+
+.chat-content{
+  max-width:78%
+}
+
+.chat-user{
+  margin:0 5px 3px;
+  color:#76a3ff;
+  font-size:10px;
+  font-weight:850
+}
+
+.chat-msg{
+  padding:9px 11px 7px;
+  border-radius:17px 17px 17px 5px;
+  background:#171d28;
+  border:1px solid rgba(255,255,255,.04);
+  word-break:break-word;
+  line-height:1.4;
+  font-size:13px
+}
+
+.chat-row.mine .chat-msg{
+  background:linear-gradient(135deg,#3169e8,#594bd3);
+  border-radius:17px 17px 5px 17px
+}
+
+.chat-time{
+  font-size:8px;
+  opacity:.55;
+  margin-left:7px
+}
+
+.chat-input{
+  display:flex;
+  gap:8px;
+  padding:10px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  border-top:1px solid rgba(255,255,255,.06);
+  background:#0d1119
+}
+
+.chat-input input{
+  flex:1;
+  height:45px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#151a24;
+  color:#fff;
+  border-radius:23px;
+  padding:0 16px;
+  outline:0
+}
+
+.chat-send{
+  width:45px;
+  height:45px;
+  flex:0 0 45px;
+  border:0;
+  border-radius:50%;
+  background:linear-gradient(135deg,#4d8cff,#664cff);
+  color:#fff;
+  font-size:18px;
+  box-shadow:0 8px 25px rgba(72,105,255,.25)
+}
+
+/* TRADE / STATUS */
+
+.status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:6px 9px;
+  border-radius:9px;
+  background:rgba(75,105,255,.1);
+  color:#87aaff;
+  font-size:10px;
+  font-weight:800
+}
+
+.wallet{
+  transition:.2s
+}
+
+.wallet:hover{
+  border-color:rgba(95,132,255,.25)
+}
+
+/* SCROLL */
+
+::-webkit-scrollbar{
+  width:5px;
+  height:5px
+}
+
+::-webkit-scrollbar-thumb{
+  background:#242b38;
+  border-radius:10px
+}
+
+/* MOBILE */
+
+@media(max-width:520px){
+  .container{
+    padding:13px
+  }
+
+  .hero{
+    min-height:230px;
+    padding:22px 18px
+  }
+
+  .hero h1{
+    font-size:27px
+  }
+
+  .hero button{
+    width:100%
+  }
+
+  .card{
+    min-height:181px;
+    padding:9px
+  }
+
+  .card-icon{
+    height:95px
+  }
+
+  .grid{
+    gap:9px
+  }
+}
+
+@media(min-width:700px){
+  .grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))
+  }
+}
 </style>
 </head>
 
 <body>
 
 <header class="top">
-  <div class="logo">🌊 Atlantida <span>Market</span></div>
-  <div class="sub">Маркетплейс цифровых товаров</div>
+  <div class="top-inner">
 
-  <div class="search">
-    🔎
-    <input id="search" placeholder="Поиск товаров..." oninput="loadListings()">
+    <div class="logo">
+      <div class="logo-mark">✦</div>
+      <div>Atlantida <span>Market</span></div>
+    </div>
+
+    <div class="sub">Premium P2P marketplace · digital goods</div>
+
+    <div class="search">
+      <div class="search-icon">⌕</div>
+      <input
+        id="search"
+        placeholder="Найти товар, Stars, Gift, NFT..."
+        oninput="loadListings()"
+      >
+    </div>
+
   </div>
 </header>
+
 
 <main class="container">
 
 <section id="home" class="page active">
+
   <div class="hero">
+
     <small>ATLANTIDA MARKET</small>
-    <h1>Покупай. Продавай. Обменивай.</h1>
-    <p>Gifts, Stars, NFT, TON и другие цифровые товары в одном месте.</p>
-    <button onclick="showPage('catalog')">Открыть каталог →</button>
+
+    <h1>
+      Покупай.<br>
+      Продавай.<br>
+      Обменивай.
+    </h1>
+
+    <p>
+      Премиальный P2P-маркет цифровых товаров.
+      Gifts, Stars, NFT, TON и другие цифровые позиции.
+    </p>
+
+    <button onclick="showPage('catalog')">
+      Открыть маркет →
+    </button>
+
   </div>
+
 
   <div class="section-head">
     <h2>Категории</h2>
@@ -118,59 +1091,82 @@ button{cursor:pointer}
 
   <div id="homeCats" class="cats"></div>
 
+
   <div class="section-head">
     <h2>🔥 Новые объявления</h2>
-    <span onclick="showPage('catalog')">Все →</span>
+    <span onclick="showPage('catalog')">Смотреть все →</span>
   </div>
 
   <div id="homeGrid" class="grid"></div>
+
 </section>
 
 
 <section id="catalog" class="page">
+
   <div class="section-head">
-    <h2>🛒 Каталог</h2>
+    <h2>🛍 Маркет</h2>
     <span id="count"></span>
   </div>
 
   <div id="catalogCats" class="cats"></div>
-  <div id="catalogGrid" class="grid" style="margin-top:13px"></div>
+
+  <div
+    id="catalogGrid"
+    class="grid"
+    style="margin-top:14px"
+  ></div>
+
 </section>
 
 
 <section id="favorites" class="page">
+
   <div class="section-head">
-    <h2>❤️ Избранное</h2>
+    <h2>♡ Избранное</h2>
   </div>
 
   <div id="favGrid" class="grid"></div>
+
 </section>
 
 
 <section id="sell" class="page">
+
   <div class="section-head">
-    <h2>➕ Продать товар</h2>
+    <h2>＋ Новое объявление</h2>
   </div>
 
   <div class="form">
-    <label>Название</label>
-    <input id="sellTitle" placeholder="Например: Telegram Gift">
+
+    <label>Название товара</label>
+    <input
+      id="sellTitle"
+      placeholder="Например: Telegram Gift"
+    >
 
     <label>Категория</label>
     <select id="sellCategory">
-      <option value="gifts">Gifts</option>
-      <option value="stars">Stars</option>
-      <option value="nft">NFT</option>
-      <option value="ton">TON</option>
-      <option value="crypto">Crypto</option>
-      <option value="other">Другое</option>
+      <option value="gifts">🎁 Gifts</option>
+      <option value="stars">⭐ Stars</option>
+      <option value="nft">💎 NFT</option>
+      <option value="ton">💠 TON</option>
+      <option value="crypto">🪙 Crypto</option>
+      <option value="other">📦 Другое</option>
     </select>
 
     <label>Количество</label>
-    <input id="sellAmount" value="1" placeholder="1">
+    <input
+      id="sellAmount"
+      value="1"
+      placeholder="1"
+    >
 
     <label>Цена</label>
-    <input id="sellPrice" placeholder="Например: 5">
+    <input
+      id="sellPrice"
+      placeholder="Например: 5"
+    >
 
     <label>Валюта</label>
     <select id="sellCurrency">
@@ -180,24 +1176,38 @@ button{cursor:pointer}
     </select>
 
     <label>Описание</label>
-    <textarea id="sellDesc" placeholder="Опишите товар подробнее..."></textarea>
+    <textarea
+      id="sellDesc"
+      placeholder="Опишите товар, состояние, условия сделки..."
+    ></textarea>
 
-    <button class="primary" onclick="createListing()">
+    <button
+      class="primary"
+      onclick="createListing()"
+    >
       Опубликовать объявление
     </button>
+
   </div>
+
 </section>
 
 
 <section id="profile" class="page">
 
   <div class="profile">
+
     <div class="avatar" id="avatar">А</div>
+
     <h2 id="profileName">Игрок</h2>
+
     <p id="profileUsername">Telegram</p>
+
   </div>
 
+
   <div class="statgrid">
+
     <div class="stat">
       <b id="myListings">0</b>
       <span>Объявлений</span>
@@ -212,136 +1222,258 @@ button{cursor:pointer}
       <b id="tradeCount">0</b>
       <span>Сделок</span>
     </div>
+
   </div>
 
 
   <div class="section-head">
-    <h2>💳 Мои способы оплаты</h2>
+    <h2>💳 Способы оплаты</h2>
   </div>
 
+
   <div class="wallet">
-    <div class="wallet-title">TON</div>
-    <div class="wallet-status" id="tonStatus">
+
+    <div class="wallet-title">TON Wallet</div>
+
+    <div
+      class="wallet-status"
+      id="tonStatus"
+    >
       Не подключён
     </div>
-    <input id="tonWallet" placeholder="TON-кошелёк">
+
+    <input
+      id="tonWallet"
+      placeholder="TON-кошелёк"
+    >
+
   </div>
 
+
   <div class="wallet">
+
     <div class="wallet-title">USDT ERC-20</div>
-    <div class="wallet-status" id="usdtStatus">
+
+    <div
+      class="wallet-status"
+      id="usdtStatus"
+    >
       Не подключён
     </div>
-    <input id="usdtWallet" placeholder="0x...">
+
+    <input
+      id="usdtWallet"
+      placeholder="0x..."
+    >
+
   </div>
 
-  <button class="primary" onclick="saveWallets()">
+
+  <button
+    class="primary"
+    onclick="saveWallets()"
+  >
     Сохранить кошельки
   </button>
 
 
-  <div class="menu-card" style="margin-top:12px">
+  <div
+    class="menu-card"
+    style="margin-top:13px"
+  >
 
-    <div class="menu-item" onclick="showPage('favorites')">
-      <div class="menu-icon">❤️</div>
+    <div
+      class="menu-item"
+      onclick="showPage('favorites')"
+    >
+      <div class="menu-icon">♡</div>
       <div>
         <b>Избранное</b>
         <small>Сохранённые товары</small>
       </div>
     </div>
 
-    <div class="menu-item" onclick="showPage('sell')">
-      <div class="menu-icon">📦</div>
+
+    <div
+      class="menu-item"
+      onclick="showPage('sell')"
+    >
+      <div class="menu-icon">＋</div>
       <div>
         <b>Мои объявления</b>
-        <small>Управление товарами</small>
+        <small>Продажа цифровых товаров</small>
       </div>
     </div>
 
-    <div class="menu-item" onclick="openPublicChat()">
+
+    <div
+      class="menu-item"
+      onclick="openPublicChat()"
+    >
       <div class="menu-icon">💬</div>
       <div>
         <b>Общий чат</b>
-        <small>Общение пользователей Market</small>
+        <small>Общение пользователей</small>
       </div>
     </div>
 
-    <div class="menu-item" onclick="showTrades('buy')">
-      <div class="menu-icon">🛍️</div>
+
+    <div
+      class="menu-item"
+      onclick="showTrades('buy')"
+    >
+      <div class="menu-icon">🛍</div>
       <div>
         <b>Мои покупки</b>
-        <small>История покупок</small>
+        <small>История покупок и сделок</small>
       </div>
     </div>
 
-    <div class="menu-item" onclick="showTrades('sell')">
-      <div class="menu-icon">💰</div>
+
+    <div
+      class="menu-item"
+      onclick="showTrades('sell')"
+    >
+      <div class="menu-icon">↗</div>
       <div>
         <b>Мои продажи</b>
-        <small>Ваши сделки</small>
+        <small>Активные и завершённые сделки</small>
       </div>
     </div>
 
   </div>
+
 </section>
 
 </main>
 
 
 <nav class="bottom">
-  <button class="nav active" data-page="home" onclick="showPage('home')">
-    <b>🏠</b>Главная
+
+  <button
+    class="nav active"
+    data-page="home"
+    onclick="showPage('home')"
+  >
+    <b>⌂</b>
+    Главная
   </button>
 
-  <button class="nav" data-page="catalog" onclick="showPage('catalog')">
-    <b>🛒</b>Каталог
+
+  <button
+    class="nav"
+    data-page="catalog"
+    onclick="showPage('catalog')"
+  >
+    <b>◈</b>
+    Маркет
   </button>
 
-  <button class="nav" data-page="favorites" onclick="showPage('favorites')">
-    <b>❤️</b>Избранное
+
+  <button
+    class="nav"
+    data-page="favorites"
+    onclick="showPage('favorites')"
+  >
+    <b>♡</b>
+    Избранное
   </button>
 
-  <button class="nav" data-page="sell" onclick="showPage('sell')">
-    <b>➕</b>Продать
+
+  <button
+    class="nav"
+    data-page="sell"
+    onclick="showPage('sell')"
+  >
+    <b>＋</b>
+    Продать
   </button>
 
-  <button class="nav" data-page="profile" onclick="showPage('profile')">
-    <b>👤</b>Профиль
+
+  <button
+    class="nav"
+    data-page="profile"
+    onclick="showPage('profile')"
+  >
+    <b>◉</b>
+    Профиль
   </button>
+
 </nav>
 
 
-<div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
+<div
+  id="modal"
+  class="modal"
+  onclick="if(event.target===this)closeModal()"
+>
+
   <div class="sheet">
-    <button class="close" onclick="closeModal()">✕</button>
+
+    <button
+      class="close"
+      onclick="closeModal()"
+    >
+      ✕
+    </button>
+
     <div id="modalContent"></div>
+
   </div>
+
 </div>
 
-<div id="toast" class="toast"></div>
+
+<div
+  id="toast"
+  class="toast"
+></div>
 
 
-<div id="publicChatOverlay" class="chat-overlay">
+<div
+  id="publicChatOverlay"
+  class="chat-overlay"
+>
+
   <div class="chat-box">
 
     <div class="chat-head">
+
       <div class="chat-head-left">
-        <div class="chat-head-avatar">💬</div>
+
+        <div class="chat-head-avatar">
+          💬
+        </div>
 
         <div class="chat-head-title">
           <b>Общий чат</b>
           <small>Atlantida Market</small>
         </div>
+
       </div>
 
-      <button class="chat-close" onclick="closePublicChat()">×</button>
+      <button
+        class="chat-close"
+        onclick="closePublicChat()"
+      >
+        ×
+      </button>
+
     </div>
 
-    <div id="publicChatMessages" class="chat-messages">
-      <div class="empty">Загрузка...</div>
+
+    <div
+      id="publicChatMessages"
+      class="chat-messages"
+    >
+      <div class="empty">
+        Загрузка...
+      </div>
     </div>
+
 
     <div class="chat-input">
+
       <input
         id="publicChatInput"
         maxlength="500"
@@ -349,16 +1481,22 @@ button{cursor:pointer}
         onkeydown="if(event.key==='Enter')sendPublicMessage()"
       >
 
-      <button class="chat-send" onclick="sendPublicMessage()">
+      <button
+        class="chat-send"
+        onclick="sendPublicMessage()"
+      >
         ➤
       </button>
+
     </div>
 
   </div>
+
 </div>
 
 
 <script>
+
 const API = "https://atlantidamarket.onrender.com";
 
 const tg = window.Telegram?.WebApp;
@@ -1528,6 +2666,7 @@ function chatTime(value){
 
 loadListings();
 loadProfile();
+
 </script>
 
 </body>
