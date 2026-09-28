@@ -230,7 +230,7 @@ async def start_server():
     site=web.TCPSite(
         runner,
         "0.0.0.0",
-        8080
+        int(os.getenv("PORT", "8080"))
     )
 
     await site.start()
