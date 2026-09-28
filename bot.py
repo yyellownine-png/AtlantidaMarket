@@ -23,20 +23,27 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-if not BOT_TOKEN or BOT_TOKEN == "ТОКЕН_ТВОЕГО_БОТА":
-    raise RuntimeError("В .env не указан настоящий BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN не найден в .env")
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(BOT_TOKEN)
 dp = Dispatcher()
 
-DB = "atlantida.db"
+BASE = os.path.dirname(os.path.abspath(__file__))
+DB = os.path.join(BASE, "atlantida.db")
 
 
-# =========================
-# STATES
-# =========================
+CATEGORIES = {
+    "stars": "⭐ Stars",
+    "gifts": "🎁 Gifts",
+    "nft": "💎 NFT",
+    "ton": "💠 TON",
+    "crypto": "🪙 Crypto",
+    "other": "📦 Другое",
+}
+
 
 class SellStates(StatesGroup):
     category = State()
@@ -50,89 +57,65 @@ class SearchStates(StatesGroup):
     query = State()
 
 
-# =========================
-# CATEGORIES
-# =========================
-
-CATEGORIES = {
-    "stars": "⭐ Telegram Stars",
-    "gifts": "🎁 Telegram Gifts",
-    "nft": "💎 NFT",
-    "ton": "💠 TON",
-    "other": "📦 Другое",
-}
-
-
-# =========================
-# DATABASE
-# =========================
-
 async def init_db():
     async with aiosqlite.connect(DB) as db:
-
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY,
-                username TEXT,
-                first_name TEXT,
-                created_at TEXT
-            )
+        CREATE TABLE IF NOT EXISTS users(
+            id INTEGER PRIMARY KEY,
+            username TEXT DEFAULT '',
+            first_name TEXT DEFAULT '',
+            created_at TEXT
+        )
         """)
 
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS listings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                seller_id INTEGER,
-                category TEXT,
-                name TEXT,
-                amount TEXT,
-                price TEXT,
-                description TEXT,
-                status TEXT DEFAULT 'active',
-                created_at TEXT
-            )
+        CREATE TABLE IF NOT EXISTS listings(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            seller_id INTEGER,
+            category TEXT,
+            name TEXT,
+            amount TEXT,
+            price TEXT,
+            description TEXT,
+            status TEXT DEFAULT 'active',
+            created_at TEXT,
+            currency TEXT DEFAULT 'TON'
+        )
         """)
 
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                listing_id INTEGER,
-                buyer_id INTEGER,
-                seller_id INTEGER,
-                status TEXT DEFAULT 'created',
-                created_at TEXT
-            )
+        CREATE TABLE IF NOT EXISTS trades(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER,
+            buyer_id INTEGER,
+            seller_id INTEGER,
+            amount TEXT DEFAULT '',
+            currency TEXT DEFAULT 'TON',
+            status TEXT DEFAULT 'pending',
+            tx_hash TEXT DEFAULT '',
+            created_at TEXT
+        )
         """)
 
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS seller_payment_methods (
-                seller_id INTEGER PRIMARY KEY,
-                crypto_send TEXT,
-                ton_wallet TEXT,
-                card_info TEXT,
-                updated_at TEXT
-            )
+        CREATE TABLE IF NOT EXISTS reviews(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            seller_id INTEGER,
+            buyer_id INTEGER,
+            rating INTEGER,
+            text TEXT,
+            created_at TEXT
+        )
         """)
 
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS reports (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                listing_id INTEGER,
-                reporter_id INTEGER,
-                reason TEXT,
-                created_at TEXT
-            )
-        """)
-
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS reviews (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                seller_id INTEGER,
-                buyer_id INTEGER,
-                rating INTEGER,
-                text TEXT,
-                created_at TEXT
-            )
+        CREATE TABLE IF NOT EXISTS reports(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER,
+            reporter_id INTEGER,
+            reason TEXT,
+            created_at TEXT
+        )
         """)
 
         await db.commit()
@@ -141,23 +124,20 @@ async def init_db():
 async def save_user(user):
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
-            INSERT INTO users (id, username, first_name, created_at)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                username=excluded.username,
-                first_name=excluded.first_name
+        INSERT INTO users
+        (id,username,first_name,created_at)
+        VALUES(?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET
+            username=excluded.username,
+            first_name=excluded.first_name
         """, (
             user.id,
             user.username or "",
             user.first_name or "",
-            datetime.now().isoformat()
+            datetime.utcnow().isoformat()
         ))
         await db.commit()
 
-
-# =========================
-# KEYBOARDS
-# =========================
 
 def main_keyboard():
     return ReplyKeyboardMarkup(
@@ -182,7 +162,7 @@ def main_keyboard():
     )
 
 
-def categories_keyboard(prefix="filter"):
+def categories_keyboard(prefix):
     rows = []
 
     for key, name in CATEGORIES.items():
@@ -203,30 +183,19 @@ def categories_keyboard(prefix="filter"):
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-# =========================
-# START
-# =========================
-
 @dp.message(CommandStart())
 async def start(message: Message):
     await save_user(message.from_user)
 
-    text = (
-        "🌊 <b>ATLANTIDA MARKET</b>\n\n"
-        "Добро пожаловать на P2P-маркетплейс.\n\n"
-        "Здесь пользователи могут:\n"
-        "🛒 покупать товары\n"
-        "📤 создавать свои объявления\n"
-        "🔎 искать нужные лоты\n"
-        "🤝 создавать сделки\n"
-        "⭐ получать отзывы\n\n"
-        "⚠️ <b>РЕЖИМ ТЕСТОВЫЙ</b>\n"
-        "Бот не принимает и не хранит реальные деньги или криптовалюту.\n"
-        "Сделки сейчас демонстрационные."
-    )
-
     await message.answer(
-        text,
+        "🌊 <b>ATLANTIDA MARKET</b>\n\n"
+        "Маркетплейс цифровых товаров.\n\n"
+        "🛒 Покупай\n"
+        "📤 Продавай\n"
+        "🔎 Ищи товары\n"
+        "🤝 Управляй сделками\n"
+        "⭐ Получай отзывы\n\n"
+        "Открой меню ниже 👇",
         reply_markup=main_keyboard()
     )
 
@@ -239,16 +208,25 @@ async def menu(message: Message):
     )
 
 
-# =========================
-# BUY
-# =========================
-
 @dp.message(F.text == "🛒 Купить")
 async def buy(message: Message):
     await message.answer(
         "🛒 <b>КАТАЛОГ</b>\n\nВыбери категорию:",
         reply_markup=categories_keyboard("filter")
     )
+
+
+async def category_text(category, limit=20):
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT id,name,amount,price,currency
+        FROM listings
+        WHERE category=? AND status='active'
+        ORDER BY id DESC
+        LIMIT ?
+        """, (category, limit))
+
+        return await cur.fetchall()
 
 
 @dp.callback_query(F.data.startswith("filter_"))
@@ -259,46 +237,39 @@ async def filter_category(callback: CallbackQuery):
         await callback.answer("Ошибка")
         return
 
-    async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            SELECT id, seller_id, name, amount, price
-            FROM listings
-            WHERE category=? AND status='active'
-            ORDER BY id DESC
-            LIMIT 20
-        """, (category,))
+    rows = await category_text(category)
 
-        listings = await cursor.fetchall()
-
-    if not listings:
+    if not rows:
         await callback.message.edit_text(
             f"{CATEGORIES[category]}\n\n"
             "Пока здесь нет активных объявлений.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(
-                    text="⬅️ Категории",
-                    callback_data="buy_back"
-                )]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="⬅️ Категории",
+                            callback_data="buy_back"
+                        )
+                    ]
+                ]
+            )
         )
         await callback.answer()
         return
 
     text = f"{CATEGORIES[category]}\n\n"
-
     buttons = []
 
-    for listing_id, seller_id, name, amount, price in listings:
+    for lid, name, amount, price, currency in rows:
         text += (
-            f"#{listing_id} • <b>{name}</b>\n"
-            f"Количество: {amount}\n"
-            f"Цена: {price}\n\n"
+            f"#{lid} • <b>{name}</b>\n"
+            f"{amount} • {price} {currency}\n\n"
         )
 
         buttons.append([
             InlineKeyboardButton(
-                text=f"🔎 #{listing_id} {name}",
-                callback_data=f"listing_{listing_id}"
+                text=f"🔎 Открыть #{lid}",
+                callback_data=f"listing_{lid}"
             )
         ])
 
@@ -313,7 +284,6 @@ async def filter_category(callback: CallbackQuery):
         text,
         reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
     )
-
     await callback.answer()
 
 
@@ -326,69 +296,53 @@ async def buy_back(callback: CallbackQuery):
     await callback.answer()
 
 
-# =========================
-# LISTING DETAILS
-# =========================
-
 @dp.callback_query(F.data.startswith("listing_"))
 async def listing_details(callback: CallbackQuery):
     try:
         listing_id = int(callback.data.split("_")[1])
-    except:
+    except Exception:
         await callback.answer("Ошибка")
         return
 
     async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            SELECT
-                l.id,
-                l.seller_id,
-                l.category,
-                l.name,
-                l.amount,
-                l.price,
-                l.description,
-                l.created_at,
-                u.username
-            FROM listings l
-            LEFT JOIN users u ON u.id=l.seller_id
-            WHERE l.id=?
+        cur = await db.execute("""
+        SELECT
+            l.id,l.seller_id,l.category,l.name,l.amount,
+            l.price,l.description,l.currency,u.username
+        FROM listings l
+        LEFT JOIN users u ON u.id=l.seller_id
+        WHERE l.id=?
         """, (listing_id,))
 
-        row = await cursor.fetchone()
+        row = await cur.fetchone()
 
     if not row:
-        await callback.answer("Объявление не найдено", show_alert=True)
+        await callback.answer(
+            "Объявление не найдено",
+            show_alert=True
+        )
         return
 
     (
-        lid,
-        seller_id,
-        category,
-        name,
-        amount,
-        price,
-        description,
-        created_at,
-        username
+        lid,seller_id,category,name,amount,
+        price,description,currency,username
     ) = row
-
-    username_text = f"@{username}" if username else "скрыт"
 
     text = (
         f"💎 <b>ОБЪЯВЛЕНИЕ #{lid}</b>\n\n"
         f"Категория: {CATEGORIES.get(category, category)}\n"
         f"Название: <b>{name}</b>\n"
         f"Количество: {amount}\n"
-        f"Цена: <b>{price}</b>\n\n"
+        f"Цена: <b>{price} {currency}</b>\n\n"
         f"Описание:\n{description or 'Без описания'}\n\n"
-        f"👤 Продавец: {username_text}"
+        f"👤 Продавец: "
+        f"{('@' + username) if username else 'скрыт'}"
     )
 
     buttons = [
         [
             InlineKeyboardButton(
-                text="🤝 Создать тестовую сделку",
+                text="🤝 Создать сделку",
                 callback_data=f"deal_{lid}"
             )
         ],
@@ -408,79 +362,29 @@ async def listing_details(callback: CallbackQuery):
 
     await callback.message.edit_text(
         text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
-    )
-
-    await callback.answer()
-
-
-@dp.callback_query(F.data.startswith("back_category_"))
-async def back_category(callback: CallbackQuery):
-    category = callback.data.replace("back_category_", "")
-
-    if category not in CATEGORIES:
-        await callback.answer()
-        return
-
-    async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            SELECT id, name, amount, price
-            FROM listings
-            WHERE category=? AND status='active'
-            ORDER BY id DESC
-            LIMIT 20
-        """, (category,))
-
-        listings = await cursor.fetchall()
-
-    text = f"{CATEGORIES[category]}\n\n"
-    buttons = []
-
-    for lid, name, amount, price in listings:
-        text += f"#{lid} • {name} • {amount} • {price}\n"
-
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"🔎 #{lid} {name}",
-                callback_data=f"listing_{lid}"
-            )
-        ])
-
-    buttons.append([
-        InlineKeyboardButton(
-            text="⬅️ Категории",
-            callback_data="buy_back"
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=buttons
         )
-    ])
-
-    await callback.message.edit_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
     )
-
     await callback.answer()
 
-
-# =========================
-# CREATE DEAL
-# =========================
 
 @dp.callback_query(F.data.startswith("deal_"))
 async def create_deal(callback: CallbackQuery):
     try:
         listing_id = int(callback.data.split("_")[1])
-    except:
+    except Exception:
         await callback.answer("Ошибка")
         return
 
     async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            SELECT seller_id, status
-            FROM listings
-            WHERE id=?
+        cur = await db.execute("""
+        SELECT seller_id,price,currency,status
+        FROM listings
+        WHERE id=?
         """, (listing_id,))
 
-        row = await cursor.fetchone()
+        row = await cur.fetchone()
 
         if not row:
             await callback.answer(
@@ -489,7 +393,7 @@ async def create_deal(callback: CallbackQuery):
             )
             return
 
-        seller_id, status = row
+        seller_id,price,currency,status = row
 
         if seller_id == callback.from_user.id:
             await callback.answer(
@@ -505,41 +409,70 @@ async def create_deal(callback: CallbackQuery):
             )
             return
 
-        await db.execute("""
-            INSERT INTO trades
-            (listing_id, buyer_id, seller_id, status, created_at)
-            VALUES (?, ?, ?, 'created', ?)
+        cur = await db.execute("""
+        INSERT INTO trades
+        (listing_id,buyer_id,seller_id,amount,currency,status,created_at)
+        VALUES(?,?,?,?,?,?,?)
         """, (
             listing_id,
             callback.from_user.id,
             seller_id,
-            datetime.now().isoformat()
+            str(price),
+            currency or "TON",
+            "pending",
+            datetime.utcnow().isoformat()
         ))
 
+        trade_id = cur.lastrowid
         await db.commit()
 
     await callback.message.answer(
-        "🤝 <b>ТЕСТОВАЯ СДЕЛКА СОЗДАНА</b>\n\n"
-        f"Объявление: #{listing_id}\n\n"
-        "⚠️ Это демонстрационный режим.\n"
-        "Реальные деньги и криптовалюта через этого бота сейчас не передаются."
+        "🤝 <b>СДЕЛКА СОЗДАНА</b>\n\n"
+        f"Номер сделки: #{trade_id}\n"
+        f"Объявление: #{listing_id}\n"
+        f"Сумма: {price} {currency}\n\n"
+        "Статус: ⏳ ожидается оплата."
     )
 
     try:
         await bot.send_message(
             seller_id,
-            "🔔 <b>Новое уведомление</b>\n\n"
-            f"Пользователь создал тестовую сделку по объявлению #{listing_id}."
+            "🔔 <b>Новая сделка</b>\n\n"
+            f"По вашему объявлению #{listing_id} "
+            f"создана сделка #{trade_id}."
         )
-    except:
+    except Exception:
         pass
 
     await callback.answer("Сделка создана")
 
 
-# =========================
-# SELL
-# =========================
+@dp.callback_query(F.data.startswith("report_"))
+async def report_listing(callback: CallbackQuery):
+    try:
+        listing_id = int(callback.data.split("_")[1])
+    except Exception:
+        await callback.answer("Ошибка")
+        return
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+        INSERT INTO reports
+        (listing_id,reporter_id,reason,created_at)
+        VALUES(?,?,?,?)
+        """, (
+            listing_id,
+            callback.from_user.id,
+            "Жалоба пользователя",
+            datetime.utcnow().isoformat()
+        ))
+        await db.commit()
+
+    await callback.answer(
+        "Жалоба отправлена.",
+        show_alert=True
+    )
+
 
 @dp.message(F.text == "📤 Продать")
 async def sell(message: Message, state: FSMContext):
@@ -547,7 +480,7 @@ async def sell(message: Message, state: FSMContext):
 
     buttons = []
 
-    for key, name in CATEGORIES.items():
+    for key,name in CATEGORIES.items():
         buttons.append([
             InlineKeyboardButton(
                 text=name,
@@ -565,12 +498,20 @@ async def sell(message: Message, state: FSMContext):
     await message.answer(
         "📤 <b>НОВОЕ ОБЪЯВЛЕНИЕ</b>\n\n"
         "Выбери категорию:",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=buttons
+        )
     )
 
 
-@dp.callback_query(F.data.startswith("sellcat_"), SellStates.category)
-async def sell_category(callback: CallbackQuery, state: FSMContext):
+@dp.callback_query(
+    F.data.startswith("sellcat_"),
+    SellStates.category
+)
+async def sell_category(
+    callback: CallbackQuery,
+    state: FSMContext
+):
     category = callback.data.replace("sellcat_", "")
 
     if category not in CATEGORIES:
@@ -581,16 +522,17 @@ async def sell_category(callback: CallbackQuery, state: FSMContext):
     await state.set_state(SellStates.name)
 
     await callback.message.answer(
-        "✏️ Введи название товара.\n\n"
-        "Например: Telegram Stars 100"
+        "✏️ Введи название товара."
     )
-
     await callback.answer()
 
 
 @dp.message(SellStates.name)
-async def sell_name(message: Message, state: FSMContext):
-    await state.update_data(name=message.text)
+async def sell_name(
+    message: Message,
+    state: FSMContext
+):
+    await state.update_data(name=message.text.strip())
     await state.set_state(SellStates.amount)
 
     await message.answer(
@@ -600,20 +542,25 @@ async def sell_name(message: Message, state: FSMContext):
 
 
 @dp.message(SellStates.amount)
-async def sell_amount(message: Message, state: FSMContext):
-    await state.update_data(amount=message.text)
+async def sell_amount(
+    message: Message,
+    state: FSMContext
+):
+    await state.update_data(amount=message.text.strip())
     await state.set_state(SellStates.price)
 
     await message.answer(
         "💰 Введи цену.\n\n"
-        "Например: 150 RUB\n\n"
-        "⚠️ В тестовом режиме это просто текстовая цена."
+        "Например: 5 TON"
     )
 
 
 @dp.message(SellStates.price)
-async def sell_price(message: Message, state: FSMContext):
-    await state.update_data(price=message.text)
+async def sell_price(
+    message: Message,
+    state: FSMContext
+):
+    await state.update_data(price=message.text.strip())
     await state.set_state(SellStates.description)
 
     await message.answer(
@@ -623,16 +570,22 @@ async def sell_price(message: Message, state: FSMContext):
 
 
 @dp.message(SellStates.description)
-async def sell_description(message: Message, state: FSMContext):
+async def sell_description(
+    message: Message,
+    state: FSMContext
+):
     data = await state.get_data()
 
-    description = message.text
+    description = message.text.strip()
+
+    if description.lower() == "нет":
+        description = ""
 
     async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            INSERT INTO listings
-            (seller_id, category, name, amount, price, description, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+        cur = await db.execute("""
+        INSERT INTO listings
+        (seller_id,category,name,amount,price,description,status,created_at)
+        VALUES(?,?,?,?,?,?,?,?)
         """, (
             message.from_user.id,
             data["category"],
@@ -640,11 +593,11 @@ async def sell_description(message: Message, state: FSMContext):
             data["amount"],
             data["price"],
             description,
-            datetime.now().isoformat()
+            "active",
+            datetime.utcnow().isoformat()
         ))
 
-        listing_id = cursor.lastrowid
-
+        listing_id = cur.lastrowid
         await db.commit()
 
     await state.clear()
@@ -655,13 +608,16 @@ async def sell_description(message: Message, state: FSMContext):
         f"Товар: {data['name']}\n"
         f"Количество: {data['amount']}\n"
         f"Цена: {data['price']}\n\n"
-        "Теперь его могут увидеть покупатели.",
+        "Объявление опубликовано.",
         reply_markup=main_keyboard()
     )
 
 
 @dp.callback_query(F.data == "cancel_sell")
-async def cancel_sell(callback: CallbackQuery, state: FSMContext):
+async def cancel_sell(
+    callback: CallbackQuery,
+    state: FSMContext
+):
     await state.clear()
 
     await callback.message.answer(
@@ -672,21 +628,17 @@ async def cancel_sell(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-# =========================
-# MY LISTINGS
-# =========================
-
 @dp.message(F.text == "📋 Мои объявления")
 async def my_listings(message: Message):
     async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            SELECT id, name, amount, price, status
-            FROM listings
-            WHERE seller_id=?
-            ORDER BY id DESC
+        cur = await db.execute("""
+        SELECT id,name,amount,price,status
+        FROM listings
+        WHERE seller_id=?
+        ORDER BY id DESC
         """, (message.from_user.id,))
 
-        rows = await cursor.fetchall()
+        rows = await cur.fetchall()
 
     if not rows:
         await message.answer(
@@ -697,8 +649,12 @@ async def my_listings(message: Message):
     text = "📋 <b>МОИ ОБЪЯВЛЕНИЯ</b>\n\n"
     buttons = []
 
-    for lid, name, amount, price, status in rows:
-        status_text = "🟢 активно" if status == "active" else "🔴 закрыто"
+    for lid,name,amount,price,status in rows:
+        status_text = (
+            "🟢 активно"
+            if status == "active"
+            else "🔴 закрыто"
+        )
 
         text += (
             f"#{lid} • <b>{name}</b>\n"
@@ -716,8 +672,10 @@ async def my_listings(message: Message):
 
     await message.answer(
         text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
-        if buttons else None
+        reply_markup=(
+            InlineKeyboardMarkup(inline_keyboard=buttons)
+            if buttons else None
+        )
     )
 
 
@@ -725,20 +683,19 @@ async def my_listings(message: Message):
 async def close_listing(callback: CallbackQuery):
     try:
         listing_id = int(callback.data.split("_")[1])
-    except:
+    except Exception:
         await callback.answer("Ошибка")
         return
 
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
-            UPDATE listings
-            SET status='closed'
-            WHERE id=? AND seller_id=?
+        UPDATE listings
+        SET status='closed'
+        WHERE id=? AND seller_id=?
         """, (
             listing_id,
             callback.from_user.id
         ))
-
         await db.commit()
 
     await callback.message.answer(
@@ -748,24 +705,22 @@ async def close_listing(callback: CallbackQuery):
     await callback.answer("Закрыто")
 
 
-# =========================
-# MY TRADES
-# =========================
-
 @dp.message(F.text == "🤝 Мои сделки")
 async def my_trades(message: Message):
     async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            SELECT id, listing_id, buyer_id, seller_id, status
-            FROM trades
-            WHERE buyer_id=? OR seller_id=?
-            ORDER BY id DESC
+        cur = await db.execute("""
+        SELECT
+            id,listing_id,buyer_id,seller_id,
+            amount,currency,status
+        FROM trades
+        WHERE buyer_id=? OR seller_id=?
+        ORDER BY id DESC
         """, (
             message.from_user.id,
             message.from_user.id
         ))
 
-        rows = await cursor.fetchall()
+        rows = await cur.fetchall()
 
     if not rows:
         await message.answer(
@@ -773,57 +728,70 @@ async def my_trades(message: Message):
         )
         return
 
+    names = {
+        "pending": "⏳ Ожидает оплаты",
+        "paid": "💳 Оплачено",
+        "delivered": "📦 Товар передан",
+        "completed": "✅ Завершено",
+        "cancelled": "❌ Отменено"
+    }
+
     text = "🤝 <b>МОИ СДЕЛКИ</b>\n\n"
 
-    for tid, lid, buyer, seller, status in rows:
-        role = "Покупатель" if buyer == message.from_user.id else "Продавец"
+    for row in rows:
+        tid,lid,buyer,seller,amount,currency,status = row
+
+        role = (
+            "Покупатель"
+            if buyer == message.from_user.id
+            else "Продавец"
+        )
 
         text += (
-            f"Сделка #{tid}\n"
+            f"<b>Сделка #{tid}</b>\n"
             f"Объявление: #{lid}\n"
             f"Роль: {role}\n"
-            f"Статус: {status}\n\n"
+            f"Сумма: {amount} {currency}\n"
+            f"Статус: {names.get(status,status)}\n\n"
         )
 
     await message.answer(text)
 
 
-# =========================
-# PROFILE
-# =========================
-
 @dp.message(F.text == "👤 Профиль")
 async def profile(message: Message):
     async with aiosqlite.connect(DB) as db:
-
-        cursor = await db.execute("""
-            SELECT COUNT(*)
-            FROM listings
-            WHERE seller_id=?
+        cur = await db.execute("""
+        SELECT COUNT(*)
+        FROM listings
+        WHERE seller_id=?
         """, (message.from_user.id,))
 
-        listings_count = (await cursor.fetchone())[0]
+        listings_count = (await cur.fetchone())[0]
 
-        cursor = await db.execute("""
-            SELECT COUNT(*)
-            FROM trades
-            WHERE buyer_id=? OR seller_id=?
+        cur = await db.execute("""
+        SELECT COUNT(*)
+        FROM trades
+        WHERE buyer_id=? OR seller_id=?
         """, (
             message.from_user.id,
             message.from_user.id
         ))
 
-        trades_count = (await cursor.fetchone())[0]
+        trades_count = (await cur.fetchone())[0]
 
-        cursor = await db.execute("""
-            SELECT AVG(rating), COUNT(*)
-            FROM reviews
-            WHERE seller_id=?
+        cur = await db.execute("""
+        SELECT AVG(rating),COUNT(*)
+        FROM reviews
+        WHERE seller_id=?
         """, (message.from_user.id,))
 
-        rating, reviews_count = await cursor.fetchone()
+        rating,reviews_count = await cur.fetchone()
 
-    rating_text = f"{rating:.1f}/5" if rating else "нет оценок"
+    rating_text = (
+        f"{rating:.1f}/5"
+        if rating else "нет оценок"
+    )
 
     username = (
         f"@{message.from_user.username}"
@@ -831,61 +799,57 @@ async def profile(message: Message):
         else "не указан"
     )
 
-    text = (
+    await message.answer(
         "👤 <b>ПРОФИЛЬ</b>\n\n"
         f"ID: <code>{message.from_user.id}</code>\n"
         f"Username: {username}\n\n"
         f"📋 Объявлений: {listings_count}\n"
         f"🤝 Сделок: {trades_count}\n"
         f"⭐ Рейтинг: {rating_text}\n"
-        f"💬 Отзывов: {reviews_count}\n"
+        f"💬 Отзывов: {reviews_count}"
     )
 
-    await message.answer(text)
-
-
-# =========================
-# SEARCH
-# =========================
 
 @dp.message(F.text == "🔎 Поиск")
-async def search_start(message: Message, state: FSMContext):
+async def search_start(
+    message: Message,
+    state: FSMContext
+):
     await state.set_state(SearchStates.query)
 
     await message.answer(
         "🔎 <b>ПОИСК</b>\n\n"
         "Напиши название товара.\n\n"
-        "Например:\n"
-        "Stars\n"
-        "NFT\n"
-        "TON\n"
-        "Gift"
+        "Например: Stars, NFT, TON, Gift"
     )
 
 
 @dp.message(SearchStates.query)
-async def search_result(message: Message, state: FSMContext):
+async def search_result(
+    message: Message,
+    state: FSMContext
+):
     query = message.text.strip()
 
     async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("""
-            SELECT id, name, amount, price
-            FROM listings
-            WHERE status='active'
-            AND (
-                name LIKE ?
-                OR description LIKE ?
-                OR category LIKE ?
-            )
-            ORDER BY id DESC
-            LIMIT 20
+        cur = await db.execute("""
+        SELECT id,name,amount,price
+        FROM listings
+        WHERE status='active'
+        AND (
+            name LIKE ?
+            OR description LIKE ?
+            OR category LIKE ?
+        )
+        ORDER BY id DESC
+        LIMIT 20
         """, (
             f"%{query}%",
             f"%{query}%",
             f"%{query}%"
         ))
 
-        rows = await cursor.fetchall()
+        rows = await cur.fetchall()
 
     await state.clear()
 
@@ -898,7 +862,7 @@ async def search_result(message: Message, state: FSMContext):
     text = f"🔎 <b>РЕЗУЛЬТАТЫ:</b> {query}\n\n"
     buttons = []
 
-    for lid, name, amount, price in rows:
+    for lid,name,amount,price in rows:
         text += (
             f"#{lid} • {name}\n"
             f"{amount} • {price}\n\n"
@@ -913,66 +877,32 @@ async def search_result(message: Message, state: FSMContext):
 
     await message.answer(
         text,
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=buttons
+        )
     )
 
-
-# =========================
-# REPORT
-# =========================
-
-@dp.callback_query(F.data.startswith("report_"))
-async def report_listing(callback: CallbackQuery):
-    try:
-        listing_id = int(callback.data.split("_")[1])
-    except:
-        await callback.answer("Ошибка")
-        return
-
-    async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-            INSERT INTO reports
-            (listing_id, reporter_id, reason, created_at)
-            VALUES (?, ?, ?, ?)
-        """, (
-            listing_id,
-            callback.from_user.id,
-            "Жалоба пользователя",
-            datetime.now().isoformat()
-        ))
-
-        await db.commit()
-
-    await callback.answer(
-        "Жалоба отправлена.",
-        show_alert=True
-    )
-
-
-# =========================
-# HELP
-# =========================
 
 @dp.message(F.text == "🛡 Помощь")
 async def help_message(message: Message):
     await message.answer(
         "🛡 <b>ПОМОЩЬ</b>\n\n"
-        "🛒 Купить — просмотр объявлений\n"
-        "📤 Продать — создать своё объявление\n"
+        "🛒 Купить — каталог товаров\n"
+        "📤 Продать — создать объявление\n"
         "🔎 Поиск — найти товар\n"
-        "📋 Мои объявления — управление своими лотами\n"
-        "🤝 Мои сделки — просмотр тестовых сделок\n"
+        "📋 Мои объявления — управление товарами\n"
+        "🤝 Мои сделки — управление сделками\n"
         "👤 Профиль — статистика аккаунта\n\n"
-        "Если нашёл подозрительное объявление — используй кнопку «Пожаловаться»."
+        "Если заметил подозрительное объявление — "
+        "используй кнопку «Пожаловаться»."
     )
 
 
-# =========================
-# CANCEL
-# =========================
-
 @dp.message(Command("cancel"))
-async def cancel(message: Message, state: FSMContext):
+async def cancel(
+    message: Message,
+    state: FSMContext
+):
     await state.clear()
 
     await message.answer(
@@ -980,10 +910,6 @@ async def cancel(message: Message, state: FSMContext):
         reply_markup=main_keyboard()
     )
 
-
-# =========================
-# UNKNOWN
-# =========================
 
 @dp.message()
 async def unknown(message: Message):
@@ -993,14 +919,12 @@ async def unknown(message: Message):
     )
 
 
-# =========================
-# RUN
-# =========================
-
 async def main():
     await init_db()
 
-    await bot.delete_webhook(drop_pending_updates=True)
+    await bot.delete_webhook(
+        drop_pending_updates=True
+    )
 
     print("===================================")
     print("🌊 ATLANTIDA MARKET")
