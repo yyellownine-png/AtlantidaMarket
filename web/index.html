@@ -475,9 +475,13 @@ textarea{min-height:100px;resize:vertical}
    <div class="menu-icon">📦</div>
    <div><b>Мои объявления</b><small>Управление товарами</small></div>
   </div>
-  <div class="menu-item">
+  <div class="menu-item" onclick="showTrades('buy')">
    <div class="menu-icon">🛍️</div>
    <div><b>Мои покупки</b><small>История покупок</small></div>
+  </div>
+  <div class="menu-item" onclick="showTrades('sell')">
+   <div class="menu-icon">💰</div>
+   <div><b>Мои продажи</b><small>Ваши сделки</small></div>
   </div>
   <div class="menu-item">
    <div class="menu-icon">🔔</div>
@@ -711,6 +715,66 @@ async function loadWallets(){
   document.getElementById("tonStatus").textContent=d.ton_wallet?"Подключён":"Не подключён";
   document.getElementById("usdtStatus").textContent=d.usdt_wallet?"Подключён":"Не подключён";
  }catch(e){}
+}
+
+
+
+async function showTrades(type){
+ const u=user();
+
+ document.getElementById("modalContent").innerHTML=`
+   <button class="close" onclick="closeModal()">✕</button>
+   <h2>${type==="buy"?"🛍️ Мои покупки":"💰 Мои продажи"}</h2>
+   <div id="tradesBox" class="empty">Загрузка...</div>
+ `;
+ document.getElementById("modal").classList.add("show");
+
+ try{
+   const r=await fetch(API+"/api/trades?user_id="+encodeURIComponent(u.id));
+   const d=await r.json();
+
+   if(!d.ok || !Array.isArray(d.trades)){
+     document.getElementById("tradesBox").innerHTML="Не удалось загрузить сделки";
+     return;
+   }
+
+   const trades=d.trades.filter(x =>
+     type==="buy" ? x.buyer_id==u.id : x.seller_id==u.id
+   );
+
+   if(!trades.length){
+     document.getElementById("tradesBox").innerHTML=
+       "📦<br><br>Пока нет сделок";
+     return;
+   }
+
+   document.getElementById("tradesBox").className="";
+   document.getElementById("tradesBox").innerHTML=trades.map(x=>`
+     <div class="wallet" style="text-align:left">
+       <b>Сделка #${x.id}</b>
+       <div class="meta">Товар #${x.listing_id}</div>
+       <div class="price">${escapeHTML(x.amount||"0")} ${escapeHTML(x.currency||"TON")}</div>
+       <div class="payment">
+         Статус: <b>${tradeStatus(x.status)}</b>
+       </div>
+     </div>
+   `).join("");
+
+ }catch(e){
+   document.getElementById("tradesBox").innerHTML=
+     "Ошибка соединения с сервером";
+ }
+}
+
+function tradeStatus(status){
+ const names={
+   pending:"⏳ Ожидает оплаты",
+   paid:"💳 Оплачено",
+   delivered:"📦 Товар передан",
+   completed:"✅ Завершено",
+   cancelled:"❌ Отменено"
+ };
+ return names[status]||status;
 }
 
 function escapeHTML(s){
