@@ -1,938 +1,402 @@
-<!DOCTYPE html>
-<html lang="ru">
+<!doctype html>
+<html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Atlantida Market</title>
-
-<script src="https://telegram.org/js/telegram-web-app.js?v=3"></script>
-
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  background:#080b10;
-  color:#fff;
-  font-family:Arial,sans-serif;
-}
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-
-.header{
-  padding:20px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  border-bottom:1px solid #202733;
-  background:#0c1017;
-}
-
-.logo{
-  font-size:22px;
-  font-weight:900;
-}
-
-.profileBtn{
-  background:#151c26;
-  border:1px solid #293342;
-  color:#fff;
-  padding:10px 14px;
-  border-radius:12px;
-}
-
-.container{
-  max-width:1000px;
-  margin:auto;
-  padding:20px;
-}
-
-.hero{
-  padding:25px 0;
-}
-
-.hero h1{
-  margin:0 0 8px;
-  font-size:32px;
-}
-
-.hero p{
-  color:#9ba6b6;
-}
-
-.search{
-  width:100%;
-  background:#111720;
-  color:#fff;
-  border:1px solid #293342;
-  padding:14px;
-  border-radius:13px;
-  outline:none;
-}
-
-.categories{
-  display:flex;
-  gap:8px;
-  overflow:auto;
-  margin:15px 0;
-}
-
-.categories button{
-  white-space:nowrap;
-  background:#111720;
-  color:#cbd3df;
-  border:1px solid #293342;
-  border-radius:12px;
-  padding:10px 14px;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
-  gap:15px;
-}
-
-.card{
-  background:#10151d;
-  border:1px solid #252e3b;
-  border-radius:18px;
-  padding:17px;
-}
-
-.card h3{
-  margin:0 0 8px;
-}
-
-.muted{
-  color:#8f9aaa;
-  font-size:13px;
-}
-
-.price{
-  font-size:20px;
-  font-weight:900;
-  margin:15px 0;
-}
-
-.buy,.submit{
-  width:100%;
-  border:0;
-  border-radius:13px;
-  padding:13px;
-  background:#fff;
-  color:#080b10;
-  font-weight:900;
-}
-
-.empty{
-  text-align:center;
-  padding:50px 15px;
-  color:#8f9aaa;
-}
-
-.modal{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.75);
-  align-items:flex-end;
-  justify-content:center;
-  z-index:100;
-}
-
-.modal.show{
-  display:flex;
-}
-
-.modalBox{
-  width:min(600px,100%);
-  background:#0e131b;
-  border:1px solid #293342;
-  border-radius:22px 22px 0 0;
-  padding:20px;
-  max-height:90vh;
-  overflow:auto;
-}
-
-.modalHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:18px;
-}
-
-.modalHead h2{
-  margin:0;
-}
-
-.close{
-  background:#171e28;
-  border:1px solid #293342;
-  color:#fff;
-  width:38px;
-  height:38px;
-  border-radius:10px;
-  font-size:22px;
-}
-
-.form{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.form input{
-  width:100%;
-  background:#080c12;
-  color:#fff;
-  border:1px solid #293342;
-  border-radius:12px;
-  padding:14px;
-  outline:none;
-}
-
-.walletInfo{
-  background:#121923;
-  border:1px solid #293342;
-  padding:14px;
-  border-radius:14px;
-  word-break:break-all;
-}
-
-.danger{
-  width:100%;
-  border:1px solid #493038;
-  background:#171015;
-  color:#ff8585;
-  border-radius:13px;
-  padding:13px;
-  font-weight:800;
-}
-
-.toast{
-  position:fixed;
-  left:50%;
-  bottom:20px;
-  transform:translateX(-50%);
-  background:#171e28;
-  border:1px solid #344052;
-  padding:13px 18px;
-  border-radius:13px;
-  display:none;
-  z-index:200;
-  max-width:90%;
-  text-align:center;
-}
+body{margin:0;background:#090b10;color:#fff;font-family:Arial,sans-serif;padding-bottom:90px}
+header{padding:18px 16px 10px;position:sticky;top:0;background:#090b10ee;backdrop-filter:blur(12px);z-index:5}
+.logo{font-size:24px;font-weight:800}
+.sub{color:#858b98;font-size:13px;margin-top:4px}
+.search{margin-top:14px;background:#151922;border:1px solid #242936;border-radius:14px;padding:13px;color:#fff;width:100%;outline:0}
+.wrap{padding:10px 16px}
+.categories{display:flex;gap:8px;overflow:auto;padding:5px 0 12px}
+.categories button{border:0;background:#151922;color:#bbb;padding:10px 14px;border-radius:12px;white-space:nowrap}
+.categories button.active{background:#fff;color:#000}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:#12151d;border:1px solid #232936;border-radius:17px;padding:13px}
+.pic{height:115px;border-radius:13px;background:linear-gradient(135deg,#202635,#0d1017);display:flex;align-items:center;justify-content:center;font-size:42px;margin-bottom:10px}
+.title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.price{font-size:17px;font-weight:800;margin:7px 0;color:#fff}
+.seller{font-size:12px;color:#858b98;margin-bottom:9px}
+.buy{width:100%;border:0;border-radius:11px;padding:10px;background:#fff;color:#000;font-weight:700}
+.empty{text-align:center;color:#777;padding:60px 20px}
+.page{display:none}.page.active{display:block}
+.profile{background:#12151d;border:1px solid #252b38;border-radius:18px;padding:18px}
+.avatar{width:76px;height:76px;border-radius:50%;background:#222938;display:flex;align-items:center;justify-content:center;font-size:35px;margin:auto}
+.name{text-align:center;font-size:21px;font-weight:800;margin-top:10px}
+.username{text-align:center;color:#858b98;margin-top:4px}
+.section{margin-top:18px;background:#151922;border-radius:14px;padding:15px}
+label{display:block;color:#9aa1ae;font-size:13px;margin-bottom:7px}
+input{width:100%;padding:12px;border-radius:11px;border:1px solid #2b3240;background:#0d1016;color:#fff;outline:0;margin-bottom:10px}
+.btn{width:100%;padding:13px;border:0;border-radius:12px;font-weight:700;margin-top:5px}
+.primary{background:#fff;color:#000}.danger{background:#2a1518;color:#ff7777}
+.bottom{position:fixed;bottom:0;left:0;right:0;height:76px;background:#10131aeF;border-top:1px solid #242936;display:flex;z-index:10;backdrop-filter:blur(15px)}
+.bottom button{flex:1;border:0;background:none;color:#777;font-size:12px}
+.bottom button.active{color:#fff}
+.icon{font-size:21px;display:block;margin-bottom:4px}
+.modal{display:none;position:fixed;inset:0;background:#000b;z-index:20;align-items:flex-end}
+.modal.show{display:flex}
+.modalbox{background:#11151d;border-radius:22px 22px 0 0;width:100%;max-height:88vh;overflow:auto;padding:20px}
+.modal h2{margin-top:0}
+.close{float:right;border:0;background:#242a36;color:#fff;border-radius:50%;width:34px;height:34px}
+.info{background:#171c25;border-radius:12px;padding:12px;margin:8px 0;color:#aaa;font-size:13px}
 </style>
 </head>
-
 <body>
 
-<header class="header">
-  <div class="logo">⚡ Atlantida Market</div>
-  <button class="profileBtn" onclick="showProfile()">👤 Профиль</button>
+<header>
+  <div class="logo">🌊 Atlantida Market</div>
+  <div class="sub">Безпечний маркет цифрових товарів</div>
+  <input id="search" class="search" placeholder="🔎 Пошук товарів..." oninput="render()">
 </header>
 
-<main class="container">
-
-  <section class="hero">
-    <h1>Atlantida Market</h1>
-    <p>Маркет цифровых товаров и услуг</p>
-  </section>
-
-  <input
-    id="search"
-    class="search"
-    placeholder="🔎 Поиск товаров..."
-    oninput="render()"
-  >
-
+<main>
+<section id="home" class="page active">
+<div class="wrap">
   <div class="categories">
-    <button onclick="setCategory('')">Все</button>
-    <button onclick="setCategory('stars')">⭐ Stars</button>
-    <button onclick="setCategory('gifts')">🎁 Gifts</button>
-    <button onclick="setCategory('nft')">💎 NFT</button>
-    <button onclick="setCategory('crypto')">💰 Crypto</button>
+    <button class="active" onclick="setCat('all',this)">Все</button>
+    <button onclick="setCat('gifts',this)">🎁 Gifts</button>
+    <button onclick="setCat('stars',this)">⭐ Stars</button>
+    <button onclick="setCat('nft',this)">💎 NFT</button>
+    <button onclick="setCat('crypto',this)">💰 Crypto</button>
+    <button onclick="setCat('other',this)">🔥 Інше</button>
   </div>
-
   <div id="list" class="grid"></div>
+</div>
+</section>
 
+<section id="sell" class="page">
+<div class="wrap">
+  <div class="profile">
+    <h2>➕ Продати товар</h2>
+    <div class="info">Створення оголошення підключимо до твоєї бази. Цей розділ уже готовий для подальшого підключення.</div>
+    <input id="sellTitle" placeholder="Назва товару">
+    <input id="sellPrice" placeholder="Ціна">
+    <button class="btn primary" onclick="createListing()">Опублікувати</button>
+  </div>
+</div>
+</section>
+
+<section id="profile" class="page">
+<div class="wrap">
+  <div class="profile">
+    <div class="avatar">👤</div>
+    <div id="profileName" class="name">Користувач</div>
+    <div id="profileUsername" class="username">@user</div>
+
+    <div class="section">
+      <h3>💳 Способи оплати</h3>
+      <label>TON гаманець</label>
+      <input id="tonWallet" placeholder="EQ... / UQ...">
+      <label>USDT ERC-20 гаманець</label>
+      <input id="usdtWallet" placeholder="0x...">
+      <button class="btn primary" onclick="saveCryptoSend()">💾 Зберегти</button>
+      <button class="btn danger" onclick="deleteCryptoSend()">🗑 Видалити гаманці</button>
+      <div id="walletStatus" class="info">Завантаження...</div>
+    </div>
+  </div>
+</div>
+</section>
 </main>
 
-<!-- PROFILE / PAYMENT -->
-<div class="modal" id="paymentModal">
-  <div class="modalBox">
+<nav class="bottom">
+  <button class="active" onclick="page('home',this)">
+    <span class="icon">🏠</span>Головна
+  </button>
+  <button onclick="page('home',this)">
+    <span class="icon">🛒</span>Каталог
+  </button>
+  <button onclick="page('sell',this)">
+    <span class="icon">➕</span>Продати
+  </button>
+  <button onclick="page('profile',this);showProfile()">
+    <span class="icon">👤</span>Профіль
+  </button>
+</nav>
 
-    <div class="modalHead">
-      <h2>💰 Способы оплаты</h2>
-      <button class="close" onclick="closePayment()">×</button>
-    </div>
-
-    <div class="muted" style="margin-bottom:15px">
-      Укажи публичные адреса кошельков.
-      Seed-фраза и приватный ключ здесь не нужны.
-    </div>
-
-    <div class="form">
-
-      <label>💎 TON</label>
-
-      <input
-        id="tonWallet"
-        placeholder="EQ... / UQ..."
-        autocomplete="off"
-        spellcheck="false"
-      >
-
-      <label>💵 USDT ERC-20</label>
-
-      <input
-        id="usdtWallet"
-        placeholder="0x..."
-        autocomplete="off"
-        spellcheck="false"
-      >
-
-      <button class="submit" onclick="saveCryptoSend()">
-        💾 Сохранить кошельки
-      </button>
-
-      <button class="danger" onclick="deleteCryptoSend()">
-        🗑️ Отвязать кошельки
-      </button>
-
-    </div>
-
-  </div>
+<div id="buyModal" class="modal" onclick="if(event.target===this)closeBuy()">
+ <div class="modalbox">
+  <button class="close" onclick="closeBuy()">×</button>
+  <h2>🛒 Купівля</h2>
+  <div id="buyContent"></div>
+ </div>
 </div>
-
-<!-- BUY -->
-<div class="modal" id="buyModal">
-  <div class="modalBox">
-
-    <div class="modalHead">
-      <h2>💳 Оплата</h2>
-      <button class="close" onclick="closeBuy()">×</button>
-    </div>
-
-    <div id="buyContent"></div>
-
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
 
 <script>
-const tg = window.Telegram?.WebApp || null;
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();}
 
-if(tg){
-  tg.ready();
-  tg.expand();
-}
-
-const API = "https://atlantidamarket.onrender.com";
-
-let allListings = [];
-let currentCategory = "";
+const API="https://atlantidamarket.onrender.com";
+let category="all";
+let listings=[];
 
 function user(){
   return tg?.initDataUnsafe?.user || {
     id:0,
-    first_name:"Игрок",
+    first_name:"Гравець",
     username:"demo"
   };
 }
 
-function toast(message){
-  const el = document.getElementById("toast");
-
-  el.textContent = message;
-  el.style.display = "block";
-
-  clearTimeout(window.toastTimer);
-
-  window.toastTimer = setTimeout(()=>{
-    el.style.display = "none";
-  },3000);
+function page(id,btn){
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".bottom button").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
 }
 
-function setCategory(category){
-  currentCategory = category;
+function setCat(cat,btn){
+  category=cat;
+  document.querySelectorAll(".categories button").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
   render();
 }
 
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
 async function loadListings(){
-
-  const list = document.getElementById("list");
-
   try{
-
-    const response = await fetch(
-      API + "/api/listings"
-    );
-
-    if(!response.ok)
-      throw new Error("API");
-
-    allListings = await response.json();
-
-    render();
-
-  }catch(error){
-
-    console.error(error);
-
-    list.innerHTML = `
-      <div class="empty">
-        ⚠️<br><br>
-        Не удалось загрузить товары.
-      </div>
-    `;
+    const r=await fetch(API+"/api/listings");
+    const d=await r.json();
+    listings=Array.isArray(d)?d:(d.listings||[]);
+  }catch(e){
+    listings=[];
   }
+  render();
 }
 
 function render(){
+  const box=document.getElementById("list");
+  const q=(document.getElementById("search").value||"").toLowerCase();
 
-  const list = document.getElementById("list");
-
-  const search =
-    document
-      .getElementById("search")
-      .value
-      .toLowerCase()
-      .trim();
-
-  const items = allListings.filter(item=>{
-
-    const matchesSearch =
-      !search ||
-      String(item.name || "")
-        .toLowerCase()
-        .includes(search);
-
-    const matchesCategory =
-      !currentCategory ||
-      String(item.category || "")
-        .toLowerCase()
-        .includes(currentCategory);
-
-    return matchesSearch && matchesCategory;
+  let arr=listings.filter(x=>{
+    const text=JSON.stringify(x).toLowerCase();
+    const okSearch=!q||text.includes(q);
+    const cat=x.category||"other";
+    const okCat=category==="all"||cat===category;
+    return okSearch&&okCat;
   });
 
-  if(!items.length){
-
-    list.innerHTML = `
-      <div class="empty">
-        Пока товаров нет.
-      </div>
-    `;
-
+  if(!arr.length){
+    box.innerHTML='<div class="empty" style="grid-column:1/-1">Поки що товарів немає.<br>Спробуй змінити пошук або категорію.</div>';
     return;
   }
 
-  list.innerHTML = items.map(item=>`
-
+  box.innerHTML=arr.map(x=>`
     <div class="card">
-
-      <div class="muted">
-        ${escapeHtml(item.category || "Товар")}
-      </div>
-
-      <h3>
-        ${escapeHtml(item.name || "Без названия")}
-      </h3>
-
-      <div class="muted">
-        ${escapeHtml(item.description || "")}
-      </div>
-
-      <div class="price">
-        ${escapeHtml(item.price || "0")}
-      </div>
-
-      <button
-        class="buy"
-        onclick="buy(${Number(item.id)})"
-      >
-        Купить
-      </button>
-
+      <div class="pic">${x.emoji||"📦"}</div>
+      <div class="title">${escapeHtml(x.title||"Товар")}</div>
+      <div class="price">${escapeHtml(x.price||"0")} ⭐</div>
+      <div class="seller">Продавець #${escapeHtml(x.seller_id||"")}</div>
+      <button class="buy" onclick="buy(${Number(x.id)||0})">Купити</button>
     </div>
-
   `).join("");
 }
 
-function escapeHtml(value){
-
-  return String(value ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
-/* =========================
-   PROFILE
-========================= */
-
 async function showProfile(){
-
-  const u = user();
-
-  if(!u.id){
-
-    toast("⚠️ Открой маркет через Telegram");
-
-    return;
-  }
-
-  const connected = await getCryptoSend();
-
-  document.getElementById("tonWallet").value =
-    connected?.ton_wallet || "";
-
-  document.getElementById("usdtWallet").value =
-    connected?.usdt_wallet || "";
-
-  document
-    .getElementById("paymentModal")
-    .classList
-    .add("show");
-}
-
-function closePayment(){
-
-  document
-    .getElementById("paymentModal")
-    .classList
-    .remove("show");
+  const u=user();
+  document.getElementById("profileName").textContent=u.first_name||"Користувач";
+  document.getElementById("profileUsername").textContent=u.username?"@"+u.username:"Telegram ID: "+(u.id||0);
+  await getCryptoSend();
 }
 
 async function getCryptoSend(){
+  const id=Number(user()?.id||0);
+  if(!id){
+    document.getElementById("walletStatus").textContent="⚠️ Відкрий маркет через Telegram.";
+    return;
+  }
 
   try{
+    const r=await fetch(API+"/api/payment-methods/"+id);
+    const d=await r.json();
 
-    const sellerId = Number(user()?.id || 0);
+    if(!d.ok) throw new Error(d.message||d.error);
 
-    if(!sellerId)
-      throw new Error("Telegram ID отсутствует");
-
-    const response = await fetch(
-      API +
-      "/api/payment-methods/" +
-      encodeURIComponent(sellerId)
-    );
-
-    const text = await response.text();
-
-    let result;
-
-    try{
-      result = JSON.parse(text);
-    }catch{
-      result = {
-        ok:false,
-        error:text
-      };
-    }
-
-    if(!response.ok || !result.ok){
-
-      console.error(
-        "GET payment error:",
-        response.status,
-        result
-      );
-
-      toast(
-        "❌ " +
-        (
-          result.message ||
-          result.error ||
-          "Ошибка загрузки"
-        )
-      );
-
-      return null;
-    }
-
-    return result;
-
-  }catch(error){
-
-    console.error(error);
-
-    toast("❌ Не удалось загрузить кошельки");
-
-    return null;
+    document.getElementById("tonWallet").value=d.ton_wallet||"";
+    document.getElementById("usdtWallet").value=d.usdt_wallet||"";
+    document.getElementById("walletStatus").textContent=
+      d.connected ? "✅ Гаманці підключені" : "ℹ️ Гаманці ще не підключені";
+  }catch(e){
+    document.getElementById("walletStatus").textContent="❌ Не вдалося завантажити гаманці";
   }
 }
-
-/* =========================
-   SAVE WALLETS
-========================= */
 
 async function saveCryptoSend(){
+  const id=Number(user()?.id||0);
+  const ton=document.getElementById("tonWallet").value.trim();
+  const usdt=document.getElementById("usdtWallet").value.trim();
 
-  const currentUser = user();
-
-  const sellerId =
-    Number(currentUser?.id || 0);
-
-  alert("Telegram ID: " + sellerId);
-
-  const ton =
-    document
-      .getElementById("tonWallet")
-      .value
-      .trim();
-
-  const usdt =
-    document
-      .getElementById("usdtWallet")
-      .value
-      .trim();
-
-  if(!sellerId){
-
-    toast(
-      "⚠️ Открой маркет через Telegram"
-    );
-
+  if(!id){
+    alert("Telegram ID не отримано. Відкрий сайт саме через Telegram.");
     return;
   }
 
-  if(!ton && !usdt){
-
-    toast(
-      "⚠️ Укажи хотя бы один кошелёк"
-    );
-
+  if(!ton&&!usdt){
+    alert("Вкажи хоча б один гаманець.");
     return;
   }
 
-  /*
-    TON.
-    Проверяем формат адреса.
-  */
-
-  if(
-    ton &&
-    !(
-      /^(EQ|UQ|kQ)[A-Za-z0-9_-]+$/.test(ton)
-    )
-  ){
-
-    toast(
-      "⚠️ Неверный TON-адрес"
-    );
-
+  if(ton&&!/^(EQ|UQ|kQ)[A-Za-z0-9_-]+$/.test(ton)){
+    alert("Невірний TON-адрес.");
     return;
   }
 
-  /*
-    USDT ERC-20.
-    0x + 40 hex символов.
-  */
-
-  if(
-    usdt &&
-    !/^0x[a-fA-F0-9]{40}$/.test(usdt)
-  ){
-
-    toast(
-      "⚠️ Неверный USDT ERC-20 адрес"
-    );
-
+  if(usdt&&!/^0x[a-fA-F0-9]{40}$/.test(usdt)){
+    alert("Невірний USDT ERC-20 адрес.");
     return;
   }
 
   try{
+    const r=await fetch(API+"/api/payment-methods",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        seller_id:id,
+        ton_wallet:ton,
+        usdt_wallet:usdt
+      })
+    });
 
-    const response = await fetch(
-      API + "/api/payment-methods",
-      {
-        method:"POST",
+    const d=await r.json();
 
-        headers:{
-          "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify({
-          seller_id:sellerId,
-          ton_wallet:ton,
-          usdt_wallet:usdt
-        })
-      }
-    );
-
-    const text =
-      await response.text();
-
-    let result;
-
-    try{
-
-      result = JSON.parse(text);
-
-    }catch{
-
-      result = {
-        ok:false,
-        error:text
-      };
+    if(!r.ok||!d.ok){
+      throw new Error(d.message||d.error||"Помилка сервера");
     }
 
-    console.log(
-      "Payment API:",
-      response.status,
-      result
-    );
-
-    if(
-      !response.ok ||
-      !result.ok
-    ){
-
-      toast(
-        "❌ " +
-        (
-          result.message ||
-          result.error ||
-          "Ошибка сервера"
-        )
-      );
-
-      return;
-    }
-
-    toast(
-      "✅ Кошельки сохранены"
-    );
-
-  }catch(error){
-
-    console.error(
-      "Payment error:",
-      error
-    );
-
-    toast(
-      "❌ Ошибка соединения с сервером"
-    );
+    document.getElementById("walletStatus").textContent="✅ Гаманці збережено";
+    alert("✅ Гаманці збережено");
+  }catch(e){
+    alert("❌ "+e.message);
   }
 }
-
-/* =========================
-   DELETE WALLETS
-========================= */
 
 async function deleteCryptoSend(){
-
-  const sellerId =
-    Number(user()?.id || 0);
-
-  if(!sellerId){
-
-    toast(
-      "⚠️ Открой маркет через Telegram"
-    );
-
+  const id=Number(user()?.id||0);
+  if(!id){
+    alert("Telegram ID не отримано.");
     return;
   }
 
   try{
+    const r=await fetch(API+"/api/payment-methods",{
+      method:"DELETE",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({seller_id:id})
+    });
 
-    const response = await fetch(
-      API + "/api/payment-methods",
-      {
-        method:"DELETE",
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error||"Помилка");
 
-        headers:{
-          "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify({
-          seller_id:sellerId
-        })
-      }
-    );
-
-    const text =
-      await response.text();
-
-    let result;
-
-    try{
-      result = JSON.parse(text);
-    }catch{
-      result = {};
-    }
-
-    if(
-      !response.ok ||
-      result.ok === false
-    ){
-
-      throw new Error(
-        result.error || "Ошибка"
-      );
-    }
-
-    document
-      .getElementById("tonWallet")
-      .value = "";
-
-    document
-      .getElementById("usdtWallet")
-      .value = "";
-
-    toast(
-      "✅ Кошельки отвязаны"
-    );
-
-  }catch(error){
-
-    console.error(error);
-
-    toast(
-      "❌ Не удалось отвязать кошельки"
-    );
+    document.getElementById("tonWallet").value="";
+    document.getElementById("usdtWallet").value="";
+    document.getElementById("walletStatus").textContent="🗑 Гаманці видалено";
+  }catch(e){
+    alert("❌ "+e.message);
   }
 }
 
-/* =========================
-   BUY
-========================= */
+async function buy(id){
+  document.getElementById("buyModal").classList.add("show");
+  const box=document.getElementById("buyContent");
+  box.innerHTML="⏳ Завантаження...";
 
-async function buy(listingId){
-
-  const item =
-    allListings.find(
-      x => Number(x.id) === Number(listingId)
-    );
+  const item=listings.find(x=>Number(x.id)===Number(id));
 
   if(!item){
-
-    toast("❌ Товар не найден");
-
+    box.innerHTML="❌ Товар не знайдено.";
     return;
   }
 
-  const sellerId =
-    Number(item.seller_id || 0);
-
-  if(!sellerId){
-
-    toast(
-      "❌ У товара не указан продавец"
-    );
-
-    return;
-  }
-
-  const content =
-    document.getElementById("buyContent");
-
-  content.innerHTML =
-    `<div class="empty">Загрузка способов оплаты...</div>`;
-
-  document
-    .getElementById("buyModal")
-    .classList
-    .add("show");
+  const seller=Number(item.seller_id||0);
 
   try{
+    const r=await fetch(API+"/api/payment-methods/"+seller);
+    const d=await r.json();
 
-    const response = await fetch(
-      API +
-      "/api/payment-methods/" +
-      encodeURIComponent(sellerId)
-    );
-
-    const result =
-      await response.json();
-
-    if(
-      !response.ok ||
-      !result.ok
-    ){
-
-      throw new Error(
-        result.error || "Ошибка"
-      );
-    }
-
-    let html = `
-      <h3>
-        ${escapeHtml(item.name || "Товар")}
-      </h3>
-
-      <p class="muted">
-        Цена: ${escapeHtml(item.price || "0")}
-      </p>
-    `;
-
-    if(result.ton_wallet){
-
-      html += `
-        <div class="walletInfo">
-          <b>💎 TON</b><br><br>
-          ${escapeHtml(result.ton_wallet)}
-        </div>
-      `;
-    }
-
-    if(result.usdt_wallet){
-
-      html += `
-        <div class="walletInfo">
-          <b>💵 USDT ERC-20</b><br><br>
-          ${escapeHtml(result.usdt_wallet)}
-        </div>
-      `;
-    }
-
-    if(
-      !result.ton_wallet &&
-      !result.usdt_wallet
-    ){
-
-      html += `
-        <div class="empty">
-          Продавец пока не подключил
-          способы оплаты.
-        </div>
-      `;
-    }
-
-    content.innerHTML = html;
-
-  }catch(error){
-
-    console.error(error);
-
-    content.innerHTML = `
-      <div class="empty">
-        ❌ Не удалось загрузить
-        способы оплаты.
+    let html=`
+      <div class="info">
+        <b>${escapeHtml(item.title||"Товар")}</b><br>
+        Ціна: ${escapeHtml(item.price||"0")} ⭐
       </div>
     `;
+
+    if(d.ton_wallet){
+      html+=`<div class="info">💎 TON<br><b>${escapeHtml(d.ton_wallet)}</b></div>`;
+    }
+
+    if(d.usdt_wallet){
+      html+=`<div class="info">💵 USDT ERC-20<br><b>${escapeHtml(d.usdt_wallet)}</b></div>`;
+    }
+
+    if(!d.ton_wallet&&!d.usdt_wallet){
+      html+=`<div class="empty">Продавець ще не підключив способи оплати.</div>`;
+    }
+
+    box.innerHTML=html;
+  }catch(e){
+    box.innerHTML="❌ Не вдалося завантажити способи оплати.";
   }
 }
 
 function closeBuy(){
-
-  document
-    .getElementById("buyModal")
-    .classList
-    .remove("show");
+  document.getElementById("buyModal").classList.remove("show");
 }
 
-/* ========================= */
+async function createListing(){
+  const title=document.getElementById("sellTitle").value.trim();
+  const price=document.getElementById("sellPrice").value.trim();
+  const id=Number(user()?.id||0);
+
+  if(!id){
+    alert("Відкрий маркет через Telegram.");
+    return;
+  }
+
+  if(!title||!price){
+    alert("Заповни назву та ціну.");
+    return;
+  }
+
+  try{
+    const r=await fetch(API+"/api/listings",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        seller_id:id,
+        title:title,
+        price:price,
+        category:"other",
+        description:"",
+        emoji:"📦"
+      })
+    });
+
+    const d=await r.json();
+
+    if(!r.ok||d.ok===false){
+      throw new Error(d.error||d.message||"Помилка");
+    }
+
+    alert("✅ Оголошення створено");
+    document.getElementById("sellTitle").value="";
+    document.getElementById("sellPrice").value="";
+    loadListings();
+  }catch(e){
+    alert("❌ "+e.message);
+  }
+}
 
 loadListings();
 </script>
-
 </body>
 </html>
