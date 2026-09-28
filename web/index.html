@@ -321,7 +321,7 @@ textarea{min-height:100px;resize:vertical}
 }
 .detail-title{font-size:22px;font-weight:900}
 .detail-desc{color:#9ca7b6;font-size:13px;line-height:1.6;margin-top:9px}
-.seller{
+.seller-click{cursor:pointer;transition:.2s}.seller-click:active{transform:scale(.98);background:#1a2230}.seller{
  margin-top:15px;
  padding:12px;
  border-radius:13px;
@@ -611,7 +611,16 @@ function openProduct(x){
   <div class="detail-title">${escapeHTML(x.title||"Товар")}</div>
   <div class="price" style="font-size:23px">${x.price||0} ${escapeHTML(x.currency||"TON")}</div>
   <div class="detail-desc">${escapeHTML(x.description||"Продавец не добавил описание.")}</div>
-  <div class="seller"><b>👤 Продавец</b><br><small style="color:#8993a3">ID: ${x.seller_id||"—"}</small></div>
+  <div class="seller seller-click" onclick="openSeller(${x.seller_id||0})">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div id="sellerAvatar" class="avatar" style="width:48px;height:48px;font-size:19px;margin:0">👤</div>
+      <div>
+        <b>👤 Профиль продавца</b>
+        <div id="sellerRating" style="color:#ffc107;margin-top:4px;font-size:12px">⭐ Загрузка рейтинга...</div>
+      </div>
+      <div style="margin-left:auto;color:#6f7b8d;font-size:20px">›</div>
+    </div>
+  </div>
   <button class="primary" onclick="loadPayment(${x.seller_id||0})">Купить товар</button>
   <div id="paymentBox"></div>`;
  document.getElementById("modal").classList.add("show");
@@ -633,6 +642,109 @@ async function loadPayment(id){
   box.innerHTML=html;
  }catch(e){
   box.innerHTML='<div class="payment">Не удалось загрузить данные продавца.</div>';
+ }
+}
+
+
+
+async function openSeller(sellerId){
+ if(!sellerId) {
+   toast("Продавец не указан");
+   return;
+ }
+
+ document.getElementById("modalContent").innerHTML=`
+   <button class="close" onclick="closeModal()">✕</button>
+   <div style="text-align:center;padding:10px 0">
+     <div class="avatar" style="width:82px;height:82px;font-size:32px">👤</div>
+     <h2 style="margin:10px 0 3px">Продавец #${sellerId}</h2>
+     <div id="sellerProfileRating" style="color:#ffc107">⭐ Загрузка...</div>
+     <div id="sellerStats" style="color:#8993a3;font-size:12px;margin-top:7px">Загрузка статистики...</div>
+   </div>
+
+   <button class="primary" onclick="contactSeller(${sellerId})">
+     💬 Связаться с продавцом
+   </button>
+
+   <div class="section-head">
+     <h2>⭐ Отзывы</h2>
+   </div>
+
+   <div id="sellerReviews" class="empty">Загрузка отзывов...</div>
+
+   <div class="section-head">
+     <h2>📦 Товары продавца</h2>
+   </div>
+
+   <div id="sellerProducts" class="grid"></div>
+ `;
+
+ document.getElementById("modal").classList.add("show");
+
+ try{
+   const r=await fetch(API+"/api/reviews?seller_id="+encodeURIComponent(sellerId));
+   const d=await r.json();
+
+   const avg=Number(d.average||0);
+   const count=Number(d.count||0);
+
+   document.getElementById("sellerProfileRating").innerHTML=
+     avg ? `⭐ <b>${avg.toFixed(1)}</b> · ${count} ${reviewWord(count)}` : "⭐ Нет отзывов";
+
+   const products=listings.filter(x=>Number(x.seller_id)===Number(sellerId));
+
+   document.getElementById("sellerStats").innerHTML=
+     `📦 ${products.length} товаров · 🛒 ${countSales(sellerId)} продаж`;
+
+   if(d.reviews && d.reviews.length){
+     document.getElementById("sellerReviews").className="";
+     document.getElementById("sellerReviews").innerHTML=d.reviews.slice(0,10).map(review=>`
+       <div class="wallet" style="text-align:left">
+         <div style="display:flex;justify-content:space-between">
+           <b>Покупатель #${review.buyer_id}</b>
+           <span style="color:#ffc107">${"⭐".repeat(Number(review.rating||0))}</span>
+         </div>
+         ${review.text ? `<div style="margin-top:8px;color:#aab3c0;font-size:13px;line-height:1.5">${escapeHTML(review.text)}</div>` : ""}
+         <div style="margin-top:7px;color:#667180;font-size:10px">${escapeHTML(review.created_at||"")}</div>
+       </div>
+     `).join("");
+   }else{
+     document.getElementById("sellerReviews").innerHTML=
+       "⭐<br><br>У продавца пока нет отзывов";
+   }
+
+   const productsBox=document.getElementById("sellerProducts");
+
+   if(products.length){
+     productsBox.innerHTML=products.slice(0,8).map(card).join("");
+   }else{
+     productsBox.innerHTML=
+       `<div class="empty" style="grid-column:1/-1">📦<br><br>Нет активных товаров</div>`;
+   }
+
+ }catch(e){
+   document.getElementById("sellerProfileRating").textContent="⭐ Не удалось загрузить рейтинг";
+   document.getElementById("sellerReviews").innerHTML="Не удалось загрузить отзывы";
+ }
+}
+
+function reviewWord(n){
+ if(n%10===1 && n%100!==11) return "отзыв";
+ if(n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) return "отзыва";
+ return "отзывов";
+}
+
+function countSales(sellerId){
+ return listings.filter(x=>Number(x.seller_id)===Number(sellerId)).length;
+}
+
+function contactSeller(sellerId){
+ const username=listings.find(x=>Number(x.seller_id)===Number(sellerId))?.seller_username;
+
+ if(username){
+   window.open("https://t.me/"+String(username).replace("@",""),"_blank");
+ }else{
+   toast("Контакт продавца пока не указан");
  }
 }
 
