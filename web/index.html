@@ -898,20 +898,51 @@ function toast(text){
 
 function showPage(page){
 
-  document.querySelectorAll(".page")
-    .forEach(x=>x.classList.remove("active"));
+  const homeSections = document.querySelectorAll(".hero, .searchbox, .section:not(#sellSection):not(#profileSection)");
+  const sellSection = document.getElementById("sellSection");
+  const profileSection = document.getElementById("profileSection");
+  const homeGrid = document.getElementById("homeGrid");
+  const catalogGrid = document.getElementById("catalogGrid");
+  const favGrid = document.getElementById("favGrid");
+  const homeCats = document.getElementById("homeCats");
+  const catalogCats = document.getElementById("catalogCats");
+  const marketFilters = document.getElementById("marketFilters");
 
-  const el=document.getElementById(page);
+  document.querySelectorAll(".bottom-nav button").forEach((btn, i)=>{
+    btn.classList.toggle(
+      "active",
+      (page==="home" && i===0) ||
+      (page==="catalog" && i===1) ||
+      (page==="favorites" && i===2) ||
+      (page==="profile" && i===3)
+    );
+  });
 
-  if(el) el.classList.add("active");
+  homeSections.forEach(x=>x.style.display = page==="home" ? "" : "none");
 
-  document.querySelectorAll(".nav")
-    .forEach(x=>{
-      x.classList.toggle(
-        "active",
-        x.dataset.page===page
-      );
-    });
+  if(homeGrid) homeGrid.style.display =
+    page==="home" ? "" : "none";
+
+  if(homeCats) homeCats.style.display =
+    page==="home" ? "" : "none";
+
+  if(catalogGrid) catalogGrid.style.display =
+    page==="catalog" ? "" : "none";
+
+  if(catalogCats) catalogCats.style.display =
+    page==="catalog" ? "" : "none";
+
+  if(marketFilters) marketFilters.style.display =
+    page==="catalog" ? "flex" : "none";
+
+  if(favGrid) favGrid.style.display =
+    page==="favorites" ? "" : "none";
+
+  if(sellSection) sellSection.style.display =
+    page==="sell" ? "" : "none";
+
+  if(profileSection) profileSection.style.display =
+    page==="profile" ? "" : "none";
 
   window.scrollTo(0,0);
 
