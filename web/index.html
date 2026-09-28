@@ -2937,5 +2937,57 @@ window.addEventListener("beforeunload",()=>{
 });
 </script>
 
+
+<script>
+/* ===== ADMIN BUTTON ===== */
+
+async function initAdminButton(){
+  try{
+    const u = user();
+
+    const res = await fetch(
+      API + "/api/admin/listings?user_id=" +
+      encodeURIComponent(u.id)
+    );
+
+    if(!res.ok) return;
+
+    const data = await res.json();
+
+    if(!data.ok) return;
+
+    const profile = document.getElementById("profile");
+
+    if(!profile) return;
+
+    if(document.getElementById("adminPanelButton")) return;
+
+    const button = document.createElement("button");
+
+    button.id = "adminPanelButton";
+    button.className = "primary";
+    button.style.cssText = `
+      width:100%;
+      margin-top:12px;
+      min-height:48px;
+      border-radius:16px;
+      font-weight:900;
+      letter-spacing:.2px;
+    `;
+
+    button.innerHTML = "👑 Админ-панель";
+
+    button.onclick = () => openAdminPanel();
+
+    profile.appendChild(button);
+
+  }catch(e){
+    console.log("Admin button:",e);
+  }
+}
+
+setTimeout(initAdminButton,1000);
+</script>
+
 </body>
 </html>
