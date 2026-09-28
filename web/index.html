@@ -823,8 +823,14 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   <button onclick="showPage('profile')">♙<br>Профиль</button>
 </nav>
 
+
 <script>
-alert("ATLANTIDA MINI APP JS LOADED");
+document.addEventListener("click", function(e){
+  const btn = e.target.closest("button");
+  if(btn){
+    console.log("ATLANTIDA BUTTON CLICK:", btn.innerText);
+  }
+});
 </script>
 <script>
 
