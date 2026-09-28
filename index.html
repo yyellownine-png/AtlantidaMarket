@@ -464,6 +464,40 @@ body:before{
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="modal" id="paymentModal">
+  <div class="modalBox">
+    <div class="modalHead">
+      <h2>💰 Получение оплаты</h2>
+      <button class="close" onclick="closePayment()">×</button>
+    </div>
+
+    <div style="color:#9ba6b6;font-size:13px;margin-bottom:14px">
+      Укажи свою ссылку Crypto Bot <b>t.me/send...</b>.
+      Она будет использоваться покупателями для оплаты товаров.
+    </div>
+
+    <div class="form">
+      <input
+        id="cryptoSend"
+        placeholder="https://t.me/send..."
+        autocomplete="off"
+      >
+
+      <button class="submit" onclick="saveCryptoSend()">
+        🤖 Сохранить Crypto Bot
+      </button>
+
+      <button
+        type="button"
+        onclick="deleteCryptoSend()"
+        style="border:1px solid #343d49;background:#171d26;color:#ff7b7b;border-radius:14px;padding:13px;font-weight:800"
+      >
+        🗑️ Отвязать
+      </button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 const tg = window.Telegram?.WebApp;
@@ -672,10 +706,95 @@ function toast(text){
   },2500);
 }
 
-function showProfile(){
+async function showProfile(){
   const u = user();
 
-  toast("👤 " + (u.first_name || "Игрок"));
+  if(!u.id){
+    toast("⚠️ Открой маркет через Telegram");
+    return;
+  }
+
+  const connected = await getCryptoSend();
+
+  document.getElementById("cryptoSend").value =
+    connected?.crypto_send || "";
+
+  document.getElementById("paymentModal").classList.add("show");
+}
+
+function closePayment(){
+  document.getElementById("paymentModal").classList.remove("show");
+}
+
+async function getCryptoSend(){
+  try{
+    const response = await fetch(
+      API + "/api/payment-methods/" + encodeURIComponent(user().id)
+    );
+
+    if(!response.ok) throw new Error();
+
+    return await response.json();
+  }catch(e){
+    toast("❌ Не удалось загрузить способ оплаты");
+    return null;
+  }
+}
+
+async function saveCryptoSend(){
+  const value = document
+    .getElementById("cryptoSend")
+    .value
+    .trim();
+
+  if(!value.startsWith("https://t.me/send")){
+    toast("⚠️ Нужна ссылка https://t.me/send...");
+    return;
+  }
+
+  try{
+    const response = await fetch(API + "/api/payment-methods",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        seller_id:user().id,
+        crypto_send:value
+      })
+    });
+
+    const result = await response.json();
+
+    if(!response.ok || !result.ok){
+      throw new Error();
+    }
+
+    toast("✅ Crypto Bot привязан");
+  }catch(e){
+    toast("❌ Не удалось сохранить");
+  }
+}
+
+async function deleteCryptoSend(){
+  try{
+    const response = await fetch(API + "/api/payment-methods",{
+      method:"DELETE",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        seller_id:user().id
+      })
+    });
+
+    if(!response.ok) throw new Error();
+
+    document.getElementById("cryptoSend").value = "";
+    toast("✅ Crypto Bot отвязан");
+  }catch(e){
+    toast("❌ Не удалось отвязать");
+  }
 }
 
 function scrollTopPage(){
@@ -708,6 +827,13 @@ document.getElementById("sellModal")
   .addEventListener("click",e=>{
     if(e.target.id === "sellModal"){
       closeSell();
+    }
+  });
+
+document.getElementById("paymentModal")
+  .addEventListener("click",e=>{
+    if(e.target.id === "paymentModal"){
+      closePayment();
     }
   });
 

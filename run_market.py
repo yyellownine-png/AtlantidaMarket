@@ -28,6 +28,16 @@ async def init_db():
 
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
+            CREATE TABLE IF NOT EXISTS seller_payment_methods (
+                seller_id INTEGER PRIMARY KEY,
+                crypto_send TEXT,
+                ton_wallet TEXT,
+                card_info TEXT,
+                updated_at TEXT
+            )
+        """)
+
+        await db.execute("""
             CREATE TABLE IF NOT EXISTS listings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 seller_id INTEGER NOT NULL,
