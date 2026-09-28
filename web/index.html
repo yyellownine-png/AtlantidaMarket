@@ -225,6 +225,95 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
  .grid{gap:9px}
  .card{padding:13px;border-radius:18px}
 }
+
+/* PREMIUM TRADE UI */
+
+#modalContent h2{
+  margin:0 0 18px;
+  font-size:24px;
+  font-weight:900;
+  letter-spacing:-.4px;
+}
+
+#modalContent .info{
+  margin:10px 0;
+  padding:14px 15px;
+  border-radius:17px;
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.075);
+  color:#aeb7ce;
+  line-height:1.5;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+#modalContent .info b{
+  color:#fff;
+  font-weight:850;
+}
+
+#modalContent #txHash{
+  width:100%!important;
+  margin-top:12px!important;
+  min-height:50px;
+  padding:14px 15px!important;
+  border:1px solid rgba(100,180,255,.16)!important;
+  border-radius:16px!important;
+  outline:none;
+  background:rgba(5,8,18,.72)!important;
+  color:#fff!important;
+  font-size:14px;
+  transition:.2s;
+  box-shadow:inset 0 1px 8px rgba(0,0,0,.18);
+}
+
+#modalContent #txHash::placeholder{
+  color:#68738d;
+}
+
+#modalContent #txHash:focus{
+  border-color:rgba(64,205,255,.55)!important;
+  box-shadow:
+    0 0 0 3px rgba(39,196,255,.08),
+    0 8px 30px rgba(0,0,0,.2);
+}
+
+#modalContent .primary{
+  width:100%;
+  min-height:50px;
+  margin-top:12px!important;
+  border-radius:16px;
+  font-weight:850;
+  background:linear-gradient(135deg,#13c8f5,#6758ff);
+  box-shadow:
+    0 10px 30px rgba(54,125,255,.22),
+    inset 0 1px 0 rgba(255,255,255,.18);
+  transition:.2s;
+}
+
+#modalContent .primary:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.08);
+}
+
+#modalContent .primary:active{
+  transform:translateY(1px) scale(.99);
+}
+
+#modalContent .info:first-of-type{
+  border-color:rgba(40,205,255,.12);
+}
+
+@media(max-width:430px){
+  #modalContent{
+    border-radius:23px!important;
+    padding:20px!important;
+  }
+
+  #modalContent h2{
+    font-size:21px;
+  }
+}
+
 </style>
 </head>
 <body>
