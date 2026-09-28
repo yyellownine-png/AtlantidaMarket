@@ -1,311 +1,364 @@
-<!DOCTYPE html>
-<html lang="uk">
+<!doctype html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#070812">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
 <title>Atlantida Market</title>
 
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:#060711;color:#f7f8ff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-body{min-height:100vh;overflow-x:hidden}
-
-body:before{
- content:"";position:fixed;inset:-30%;z-index:-2;
- background:
- radial-gradient(circle at 15% 10%,rgba(0,190,255,.20),transparent 25%),
- radial-gradient(circle at 85% 15%,rgba(128,55,255,.20),transparent 27%),
- radial-gradient(circle at 50% 90%,rgba(0,115,255,.12),transparent 30%);
- animation:ambient 10s ease-in-out infinite alternate
-}
-body:after{
- content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
- background:linear-gradient(120deg,transparent,rgba(255,255,255,.025),transparent)
-}
-@keyframes ambient{from{transform:translate3d(-2%,0,0) scale(1)}to{transform:translate3d(2%,-2%,0) scale(1.06)}}
-
+html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;background:#050914;color:#f5f7fb}
+body{padding-bottom:85px}
 button,input,textarea,select{font:inherit}
-button{cursor:pointer;border:0;color:inherit}
-a{color:inherit;text-decoration:none}
-
-#app{max-width:720px;margin:auto;min-height:100vh;padding-bottom:92px}
-
-.topbar{
- position:sticky;top:0;z-index:20;
- padding:14px 15px 12px;
- backdrop-filter:blur(22px);
- background:rgba(6,7,17,.72);
- border-bottom:1px solid rgba(255,255,255,.07)
-}
-.brand{
- display:flex;align-items:center;justify-content:space-between;gap:12px
-}
-.logo{
- font-size:22px;font-weight:900;letter-spacing:-.7px;
- background:linear-gradient(90deg,#fff,#58dcff,#9d6cff);
- -webkit-background-clip:text;background-clip:text;color:transparent
-}
-.badge{
- padding:7px 11px;border-radius:999px;
- background:linear-gradient(135deg,rgba(0,212,255,.16),rgba(132,75,255,.18));
- border:1px solid rgba(105,205,255,.18);
- color:#a9eaff;font-size:11px;font-weight:800
-}
-
-.hero{
- margin:16px 15px;
- padding:23px 20px;
- border-radius:27px;
- position:relative;overflow:hidden;
- background:
- linear-gradient(135deg,rgba(16,20,43,.94),rgba(18,11,40,.90));
- border:1px solid rgba(140,150,255,.16);
- box-shadow:0 18px 55px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.07)
-}
-.hero:before{
- content:"";position:absolute;width:210px;height:210px;border-radius:50%;
- right:-80px;top:-100px;
- background:radial-gradient(circle,rgba(72,210,255,.35),transparent 68%);
- filter:blur(5px)
-}
-.hero:after{
- content:"";position:absolute;width:170px;height:170px;border-radius:50%;
- left:-90px;bottom:-120px;
- background:radial-gradient(circle,rgba(135,63,255,.3),transparent 68%)
-}
-.hero h1{position:relative;margin:0 0 8px;font-size:30px;line-height:1.05;letter-spacing:-1.2px}
-.hero p{position:relative;margin:0;color:#aeb3c8;font-size:14px;line-height:1.5}
-.hero-glow{
- position:absolute;right:20px;bottom:18px;width:9px;height:9px;border-radius:50%;
- background:#52e5ff;box-shadow:0 0 22px 8px rgba(0,210,255,.4)
-}
-
-.searchbox{
- margin:0 15px 14px;position:relative
-}
-.searchbox input{
- width:100%;height:49px;border-radius:17px;padding:0 17px 0 45px;
- color:#fff;outline:0;
- background:rgba(19,21,35,.78);
- border:1px solid rgba(255,255,255,.08);
- box-shadow:0 10px 30px rgba(0,0,0,.18);
- backdrop-filter:blur(15px)
-}
-.searchbox input:focus{border-color:rgba(65,210,255,.42);box-shadow:0 0 0 3px rgba(65,210,255,.07)}
-.searchbox:before{content:"⌕";position:absolute;left:17px;top:9px;font-size:24px;color:#77819b;z-index:2}
-
-.section{
- padding:0 15px;margin:20px 0
-}
-.section-title{
- display:flex;align-items:center;justify-content:space-between;margin-bottom:11px
-}
-.section-title h2{font-size:17px;margin:0;letter-spacing:-.3px}
-.section-title span{font-size:12px;color:#777f99}
-
-#homeCats,#catalogCats{
- display:flex;gap:9px;overflow-x:auto;padding:2px 1px 7px;
- scrollbar-width:none
-}
-#homeCats::-webkit-scrollbar,#catalogCats::-webkit-scrollbar{display:none}
-
-.cat{
- flex:0 0 auto;padding:10px 14px;border-radius:14px;
- color:#aab1c8;font-size:12px;font-weight:800;
- background:rgba(19,22,37,.72);
- border:1px solid rgba(255,255,255,.07);
- transition:.2s
-}
-.cat:hover,.cat.active{
- color:#fff;border-color:rgba(68,214,255,.35);
- background:linear-gradient(135deg,rgba(0,190,255,.16),rgba(125,66,255,.16));
- box-shadow:0 7px 24px rgba(0,174,255,.08)
-}
-
-.grid{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px
-}
-.card{
- min-width:0;padding:15px;border-radius:21px;
- background:linear-gradient(145deg,rgba(20,23,39,.92),rgba(12,14,27,.88));
- border:1px solid rgba(255,255,255,.075);
- box-shadow:0 14px 35px rgba(0,0,0,.23);
- transition:transform .18s,border-color .18s,box-shadow .18s;
- position:relative;overflow:hidden
-}
-.card:before{
- content:"";position:absolute;inset:0;pointer-events:none;
- background:linear-gradient(135deg,rgba(255,255,255,.055),transparent 30%)
-}
-.card:hover{
- transform:translateY(-2px);
- border-color:rgba(80,210,255,.25);
- box-shadow:0 18px 42px rgba(0,0,0,.34),0 0 25px rgba(70,170,255,.06)
-}
-.card>*{position:relative}
-.card-title{font-size:14px;font-weight:850;margin:0 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card-desc{font-size:11px;color:#8189a0;min-height:31px;line-height:1.4}
-.card-price{
- margin-top:12px;font-size:18px;font-weight:900;
- background:linear-gradient(90deg,#55e5ff,#a276ff);
- -webkit-background-clip:text;background-clip:text;color:transparent
-}
-.card-meta{font-size:10px;color:#68718a;margin-top:5px}
-
-.empty{
- padding:28px 15px;text-align:center;color:#6f7892;
- border:1px dashed rgba(255,255,255,.08);border-radius:19px
-}
-
-input,textarea,select{
- background:#111425;color:#fff;border:1px solid rgba(255,255,255,.09);
- border-radius:14px;padding:12px;outline:0
-}
-textarea{resize:vertical}
-input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
-
-.btn{
- min-height:44px;padding:0 16px;border-radius:14px;font-weight:850;
- background:linear-gradient(135deg,#13c8f5,#6758ff);
- box-shadow:0 10px 28px rgba(45,146,255,.18);
- transition:.18s
-}
-.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
-.btn.secondary{
- background:rgba(255,255,255,.055);box-shadow:none;
- border:1px solid rgba(255,255,255,.08)
-}
-
-#modal,#publicChatOverlay{
- background:rgba(2,3,9,.78)!important;
- backdrop-filter:blur(18px)!important
-}
-#modalContent{
- background:linear-gradient(145deg,#15192b,#0c0e1b)!important;
- border:1px solid rgba(132,150,255,.18)!important;
- box-shadow:0 25px 90px rgba(0,0,0,.65)!important;
- border-radius:27px!important
-}
-
-.bottom-nav{
- position:fixed;left:50%;bottom:12px;transform:translateX(-50%);
- width:min(690px,calc(100% - 24px));z-index:30;
- display:flex;justify-content:space-around;align-items:center;
- padding:8px;
- border-radius:22px;
- background:rgba(13,15,28,.84);
- border:1px solid rgba(255,255,255,.08);
- backdrop-filter:blur(24px);
- box-shadow:0 18px 55px rgba(0,0,0,.45)
-}
-.bottom-nav button{
- flex:1;background:transparent;color:#747d97;padding:8px 3px;
- border-radius:16px;font-size:10px;font-weight:800
-}
-.bottom-nav button:hover{
- color:#fff;background:rgba(255,255,255,.05)
-}
-.bottom-nav .main{
- color:#61ddff;
- background:linear-gradient(135deg,rgba(0,195,255,.12),rgba(128,67,255,.12))
-}
-
-.toast{
- border:1px solid rgba(100,220,255,.18)!important;
- background:rgba(13,17,31,.94)!important;
- box-shadow:0 12px 40px rgba(0,0,0,.45)!important;
- backdrop-filter:blur(20px)
-}
-
-@media(max-width:430px){
- #app{padding-bottom:88px}
- .hero{padding:20px 17px;border-radius:23px}
- .hero h1{font-size:27px}
- .grid{gap:9px}
- .card{padding:13px;border-radius:18px}
-}
+button{cursor:pointer}
+.top{padding:18px 15px 14px;background:linear-gradient(145deg,#07172d,#08111f);border-bottom:1px solid #17263a;position:sticky;top:0;z-index:10}
+.logo{font-size:23px;font-weight:900}
+.logo span{color:#4da3ff}
+.sub{font-size:12px;color:#8493a8;margin-top:4px}
+.search{height:45px;margin-top:14px;border:1px solid #21344c;background:#0d1827;border-radius:15px;display:flex;align-items:center;padding:0 13px;gap:8px}
+.search input{border:0;outline:0;background:none;color:#fff;width:100%}
+.container{max-width:760px;margin:auto;padding:14px}
+.page{display:none}
+.page.active{display:block}
+.hero{padding:22px;border-radius:25px;background:linear-gradient(135deg,#0b3970,#182b63 55%,#321c69);border:1px solid #2e68a8;box-shadow:0 15px 45px #0006}
+.hero small{color:#7bc4ff;font-weight:800}
+.hero h1{font-size:28px;line-height:1.1;margin:10px 0}
+.hero p{color:#c1d0e5;line-height:1.5}
+.primary,.hero button{border:0;background:linear-gradient(135deg,#168cff,#625cff);color:#fff;padding:13px 17px;border-radius:14px;font-weight:800;width:100%}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 11px}
+.section-head h2{margin:0;font-size:19px}
+.section-head span{color:#64b4ff;font-size:13px}
+.cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.cat{white-space:nowrap;border:1px solid #23344a;background:#0c1726;color:#dce8f7;padding:10px 13px;border-radius:13px}
+.cat.active{background:#1769b5;border-color:#3fa5ff}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card{position:relative;background:linear-gradient(145deg,#0e1928,#0a111c);border:1px solid #1c3047;border-radius:18px;padding:13px;min-height:155px}
+.card-icon{height:70px;border-radius:15px;background:linear-gradient(135deg,#123d68,#25205c);display:flex;align-items:center;justify-content:center;font-size:32px}
+.card h3{font-size:14px;margin:10px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:11px;color:#8493a8}
+.price{font-size:16px;font-weight:900;color:#62b5ff;margin-top:8px}
+.fav{position:absolute;right:9px;top:9px;border:0;background:#0008;color:#fff;border-radius:50%;width:32px;height:32px}
+.empty{padding:40px 15px;text-align:center;color:#78889d}
+.form,.wallet,.menu-card{background:#0c1623;border:1px solid #1b2c41;border-radius:18px;padding:15px;margin-bottom:12px}
+.form label{display:block;font-size:12px;color:#8fa1b7;margin:12px 0 6px}
+.form input,.form textarea,.form select,.wallet input{width:100%;border:1px solid #26394f;background:#101d2d;color:#fff;border-radius:12px;padding:12px;outline:0}
+.form textarea{min-height:100px;resize:vertical}
+.profile{text-align:center;padding:18px 0}
+.avatar{width:75px;height:75px;border-radius:50%;margin:auto;background:linear-gradient(135deg,#1587ff,#773cff);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900}
+.profile h2{margin:10px 0 3px}.profile p{margin:0;color:#8090a5}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:15px}
+.stat{background:#0c1623;border:1px solid #1b2c41;border-radius:15px;padding:13px;text-align:center}
+.stat b{display:block;font-size:20px}.stat span{font-size:10px;color:#8090a5}
+.wallet-title{font-weight:900}.wallet-status{font-size:11px;color:#6fc0ff;margin-top:3px}
+.menu-item{display:flex;align-items:center;gap:12px;padding:14px 3px;border-bottom:1px solid #18283a}
+.menu-item:last-child{border-bottom:0}
+.menu-icon{width:38px;height:38px;border-radius:12px;background:#14253a;display:flex;align-items:center;justify-content:center}
+.menu-item b{display:block}.menu-item small{color:#74869d}
+.bottom{position:fixed;left:0;right:0;bottom:0;height:72px;background:#07101cfa;border-top:1px solid #1a2b3e;display:flex;z-index:50;backdrop-filter:blur(14px)}
+.nav{flex:1;border:0;background:none;color:#718399;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.nav b{font-size:20px}.nav.active{color:#5db6ff}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:100}
+.modal.show{display:flex}
+.sheet{width:100%;max-height:90vh;overflow:auto;background:#09121f;border-radius:24px 24px 0 0;padding:18px;position:relative;border:1px solid #26384d}
+.close{position:absolute;right:13px;top:12px;border:0;background:#172333;color:#fff;border-radius:50%;width:36px;height:36px}
+.detail-icon{height:120px;border-radius:20px;background:linear-gradient(135deg,#123d68,#34206c);display:flex;align-items:center;justify-content:center;font-size:55px}
+.info{background:#0e1b2a;border-radius:14px;padding:13px;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#152438;color:#fff;padding:11px 15px;border-radius:12px;display:none;z-index:200}
+.chat-overlay{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:150}
+.chat-overlay.active{display:flex}
+.chat-box{width:100%;max-width:760px;margin:auto 0 0;max-height:92vh;background:#09121f;border:1px solid #263142;border-radius:24px 24px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -15px 50px #0008}
+.chat-head{height:60px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #202936;background:#0d1724}
+.chat-head-left{display:flex;align-items:center;gap:10px}
+.chat-head-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#168cff,#613cff);font-size:19px}
+.chat-head-title b{display:block}.chat-head-title small{font-size:11px;color:#7f8da3}
+.chat-close{width:36px;height:36px;border:0;border-radius:50%;background:#1a2736;color:#fff;font-size:23px}
+.chat-messages{height:62vh;min-height:300px;overflow-y:auto;padding:15px 11px;display:flex;flex-direction:column;gap:7px}
+.chat-row{display:flex;align-items:flex-end;gap:7px}
+.chat-row.mine{justify-content:flex-end}
+.chat-avatar{width:34px;height:34px;border-radius:50%;background:#24364c;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-weight:800}
+.chat-avatar img{width:100%;height:100%;object-fit:cover}
+.chat-content{max-width:78%}
+.chat-user{font-size:11px;font-weight:800;color:#66a3ff;margin:0 5px 3px}
+.chat-msg{padding:8px 11px 6px;border-radius:16px 16px 16px 5px;background:#17202b;word-break:break-word;line-height:1.35;font-size:14px}
+.chat-row.mine .chat-msg{background:#2563eb;border-radius:16px 16px 5px 16px}
+.chat-time{font-size:9px;opacity:.62;margin-left:7px}
+.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid #202936}
+.chat-input input{flex:1;height:44px;border:1px solid #293544;background:#151c26;color:#fff;border-radius:22px;padding:0 15px;outline:0}
+.chat-send{width:44px;height:44px;border:0;border-radius:50%;background:#2563eb;color:#fff;font-size:19px}
+@media(max-width:420px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h1{font-size:24px}}
 </style>
 </head>
+
 <body>
 
-<div id="app">
+<header class="top">
+  <div class="logo">🌊 Atlantida <span>Market</span></div>
+  <div class="sub">Маркетплейс цифровых товаров</div>
 
-<header class="topbar">
-  <div class="brand">
-    <div class="logo">✦ ATLANTIDA MARKET</div>
-    <div class="badge">PREMIUM</div>
+  <div class="search">
+    🔎
+    <input id="search" placeholder="Поиск товаров..." oninput="loadListings()">
   </div>
 </header>
 
-<section class="hero">
-  <h1>Маркет, де все<br>під рукою.</h1>
-  <p>Подарунки • Stars • NFT • TON<br>Швидкий пошук потрібних пропозицій.</p>
-  <div class="hero-glow"></div>
+<main class="container">
+
+<section id="home" class="page active">
+  <div class="hero">
+    <small>ATLANTIDA MARKET</small>
+    <h1>Покупай. Продавай. Обменивай.</h1>
+    <p>Gifts, Stars, NFT, TON и другие цифровые товары в одном месте.</p>
+    <button onclick="showPage('catalog')">Открыть каталог →</button>
+  </div>
+
+  <div class="section-head">
+    <h2>Категории</h2>
+  </div>
+
+  <div id="homeCats" class="cats"></div>
+
+  <div class="section-head">
+    <h2>🔥 Новые объявления</h2>
+    <span onclick="showPage('catalog')">Все →</span>
+  </div>
+
+  <div id="homeGrid" class="grid"></div>
 </section>
 
-<div class="searchbox">
-  <input id="search" placeholder="Пошук товарів..." autocomplete="off">
-</div>
 
-<section class="section">
-  <div class="section-title">
-    <h2>Категорії</h2>
+<section id="catalog" class="page">
+  <div class="section-head">
+    <h2>🛒 Каталог</h2>
     <span id="count"></span>
   </div>
-  <div id="homeCats"></div>
-  <div id="catalogCats"></div>
+
+  <div id="catalogCats" class="cats"></div>
+  <div id="catalogGrid" class="grid" style="margin-top:13px"></div>
 </section>
 
-<section class="section">
-  <div id="homeGrid" class="grid"></div>
-  <div id="catalogGrid" class="grid"></div>
+
+<section id="favorites" class="page">
+  <div class="section-head">
+    <h2>❤️ Избранное</h2>
+  </div>
+
   <div id="favGrid" class="grid"></div>
 </section>
 
-<section class="section" id="sellSection">
-  <div class="section-title"><h2>Продати</h2></div>
-  <input id="sellTitle" placeholder="Назва">
-  <select id="sellCategory"></select>
-  <input id="sellAmount" placeholder="Кількість">
-  <input id="sellPrice" placeholder="Ціна">
-  <select id="sellCurrency"></select>
-  <textarea id="sellDesc" placeholder="Опис"></textarea>
+
+<section id="sell" class="page">
+  <div class="section-head">
+    <h2>➕ Продать товар</h2>
+  </div>
+
+  <div class="form">
+    <label>Название</label>
+    <input id="sellTitle" placeholder="Например: Telegram Gift">
+
+    <label>Категория</label>
+    <select id="sellCategory">
+      <option value="gifts">Gifts</option>
+      <option value="stars">Stars</option>
+      <option value="nft">NFT</option>
+      <option value="ton">TON</option>
+      <option value="crypto">Crypto</option>
+      <option value="other">Другое</option>
+    </select>
+
+    <label>Количество</label>
+    <input id="sellAmount" value="1" placeholder="1">
+
+    <label>Цена</label>
+    <input id="sellPrice" placeholder="Например: 5">
+
+    <label>Валюта</label>
+    <select id="sellCurrency">
+      <option value="TON">TON</option>
+      <option value="USDT">USDT</option>
+      <option value="STARS">Stars</option>
+    </select>
+
+    <label>Описание</label>
+    <textarea id="sellDesc" placeholder="Опишите товар подробнее..."></textarea>
+
+    <button class="primary" onclick="createListing()">
+      Опубликовать объявление
+    </button>
+  </div>
 </section>
 
-<section class="section" id="profileSection">
-  <div class="section-title"><h2>Профіль</h2></div>
-  <div id="avatar"></div>
-  <div id="profileName"></div>
-  <div id="profileUsername"></div>
-  <div id="myListings"></div>
-  <div id="favCount"></div>
-  <div id="tradeCount"></div>
-  <input id="tonWallet" placeholder="TON wallet">
-  <input id="usdtWallet" placeholder="USDT wallet">
-  <div id="tonStatus"></div>
-  <div id="usdtStatus"></div>
+
+<section id="profile" class="page">
+
+  <div class="profile">
+    <div class="avatar" id="avatar">А</div>
+    <h2 id="profileName">Игрок</h2>
+    <p id="profileUsername">Telegram</p>
+  </div>
+
+  <div class="statgrid">
+    <div class="stat">
+      <b id="myListings">0</b>
+      <span>Объявлений</span>
+    </div>
+
+    <div class="stat">
+      <b id="favCount">0</b>
+      <span>Избранное</span>
+    </div>
+
+    <div class="stat">
+      <b id="tradeCount">0</b>
+      <span>Сделок</span>
+    </div>
+  </div>
+
+
+  <div class="section-head">
+    <h2>💳 Мои способы оплаты</h2>
+  </div>
+
+  <div class="wallet">
+    <div class="wallet-title">TON</div>
+    <div class="wallet-status" id="tonStatus">
+      Не подключён
+    </div>
+    <input id="tonWallet" placeholder="TON-кошелёк">
+  </div>
+
+  <div class="wallet">
+    <div class="wallet-title">USDT ERC-20</div>
+    <div class="wallet-status" id="usdtStatus">
+      Не подключён
+    </div>
+    <input id="usdtWallet" placeholder="0x...">
+  </div>
+
+  <button class="primary" onclick="saveWallets()">
+    Сохранить кошельки
+  </button>
+
+
+  <div class="menu-card" style="margin-top:12px">
+
+    <div class="menu-item" onclick="showPage('favorites')">
+      <div class="menu-icon">❤️</div>
+      <div>
+        <b>Избранное</b>
+        <small>Сохранённые товары</small>
+      </div>
+    </div>
+
+    <div class="menu-item" onclick="showPage('sell')">
+      <div class="menu-icon">📦</div>
+      <div>
+        <b>Мои объявления</b>
+        <small>Управление товарами</small>
+      </div>
+    </div>
+
+    <div class="menu-item" onclick="openPublicChat()">
+      <div class="menu-icon">💬</div>
+      <div>
+        <b>Общий чат</b>
+        <small>Общение пользователей Market</small>
+      </div>
+    </div>
+
+    <div class="menu-item" onclick="showTrades('buy')">
+      <div class="menu-icon">🛍️</div>
+      <div>
+        <b>Мои покупки</b>
+        <small>История покупок</small>
+      </div>
+    </div>
+
+    <div class="menu-item" onclick="showTrades('sell')">
+      <div class="menu-icon">💰</div>
+      <div>
+        <b>Мои продажи</b>
+        <small>Ваши сделки</small>
+      </div>
+    </div>
+
+  </div>
 </section>
 
-<div id="modal"><div id="modalContent"></div></div>
-<div id="toast"></div>
+</main>
 
-<div id="publicChatOverlay">
-  <div id="publicChatMessages"></div>
-  <input id="publicChatInput" placeholder="Повідомлення...">
-</div>
 
-</div>
+<nav class="bottom">
+  <button class="nav active" data-page="home" onclick="showPage('home')">
+    <b>🏠</b>Главная
+  </button>
 
-<nav class="bottom-nav">
-  <button class="main" onclick="showPage('home')">⌂<br>Головна</button>
-  <button onclick="showPage('catalog')">◈<br>Каталог</button>
-  <button onclick="showPage('favorites')">♡<br>Обране</button>
-  <button onclick="showPage('profile')">♙<br>Профіль</button>
+  <button class="nav" data-page="catalog" onclick="showPage('catalog')">
+    <b>🛒</b>Каталог
+  </button>
+
+  <button class="nav" data-page="favorites" onclick="showPage('favorites')">
+    <b>❤️</b>Избранное
+  </button>
+
+  <button class="nav" data-page="sell" onclick="showPage('sell')">
+    <b>➕</b>Продать
+  </button>
+
+  <button class="nav" data-page="profile" onclick="showPage('profile')">
+    <b>👤</b>Профиль
+  </button>
 </nav>
 
-<script>
 
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()">
+  <div class="sheet">
+    <button class="close" onclick="closeModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+
+<div id="publicChatOverlay" class="chat-overlay">
+  <div class="chat-box">
+
+    <div class="chat-head">
+      <div class="chat-head-left">
+        <div class="chat-head-avatar">💬</div>
+
+        <div class="chat-head-title">
+          <b>Общий чат</b>
+          <small>Atlantida Market</small>
+        </div>
+      </div>
+
+      <button class="chat-close" onclick="closePublicChat()">×</button>
+    </div>
+
+    <div id="publicChatMessages" class="chat-messages">
+      <div class="empty">Загрузка...</div>
+    </div>
+
+    <div class="chat-input">
+      <input
+        id="publicChatInput"
+        maxlength="500"
+        placeholder="Написать сообщение..."
+        onkeydown="if(event.key==='Enter')sendPublicMessage()"
+      >
+
+      <button class="chat-send" onclick="sendPublicMessage()">
+        ➤
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
 const API = "https://atlantidamarket.onrender.com";
 
 const tg = window.Telegram?.WebApp;
@@ -1475,7 +1528,7 @@ function chatTime(value){
 
 loadListings();
 loadProfile();
-
 </script>
+
 </body>
 </html>
