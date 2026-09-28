@@ -372,6 +372,30 @@ textarea{min-height:100px;resize:vertical}
  accent-color:#4d8dff;
 }
 </style>
+
+<style>
+.trade-actions{
+    margin-top:12px;
+    display:grid;
+    gap:8px;
+}
+
+.trade-actions button{
+    width:100%;
+}
+
+.trade-card{
+    padding:14px;
+    margin-bottom:10px;
+    border:1px solid #242b36;
+    border-radius:14px;
+    background:#10151d;
+}
+
+.trade-card>div{
+    margin-top:6px;
+}
+</style>
 </head>
 <body>
 
@@ -1029,6 +1053,114 @@ async function showTrades(type){
    document.getElementById("tradesBox").innerHTML=
      "Ошибка соединения с сервером";
  }
+}
+
+
+function tradeActions(t, type){
+    const id = t.id || t.trade_id;
+    const status = t.status || "pending";
+
+    if(type === "buy"){
+        if(status === "pending"){
+            return `
+              <button class="primary" onclick="markTradePaid(${id})">
+                💳 Я оплатил
+              </button>`;
+        }
+
+        if(status === "paid"){
+            return `
+              <div class="payment">⏳ Ожидаем передачу товара продавцом</div>`;
+        }
+
+        if(status === "delivered"){
+            return `
+              <button class="primary" onclick="completeTrade(${id})">
+                ✅ Подтвердить получение
+              </button>`;
+        }
+
+        if(status === "completed"){
+            return `<div class="payment">✅ Сделка завершена</div>`;
+        }
+    }
+
+    if(type === "sell"){
+        if(status === "pending"){
+            return `
+              <div class="payment">
+                ⏳ Ожидаем оплату покупателя
+              </div>`;
+        }
+
+        if(status === "paid"){
+            return `
+              <button class="primary" onclick="deliverTrade(${id})">
+                📦 Передать товар
+              </button>`;
+        }
+
+        if(status === "delivered"){
+            return `
+              <div class="payment">
+                ⏳ Покупатель должен подтвердить получение
+              </div>`;
+        }
+
+        if(status === "completed"){
+            return `<div class="payment">✅ Сделка завершена</div>`;
+        }
+    }
+
+    return "";
+}
+
+async function changeTradeStatus(id, status){
+    const u=user();
+
+    try{
+        const r=await fetch(API+"/api/trades/status",{
+            method:"PATCH",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                trade_id:id,
+                user_id:u.id,
+                status:status
+            })
+        });
+
+        const d=await r.json();
+
+        if(!r.ok || !d.ok){
+            toast(d.error || "Не удалось изменить статус");
+            return false;
+        }
+
+        toast("Статус сделки обновлён");
+        return true;
+
+    }catch(e){
+        toast("Ошибка соединения");
+        return false;
+    }
+}
+
+async function markTradePaid(id){
+    if(await changeTradeStatus(id,"paid")){
+        showTrades("buy");
+    }
+}
+
+async function deliverTrade(id){
+    if(await changeTradeStatus(id,"delivered")){
+        showTrades("sell");
+    }
+}
+
+async function completeTrade(id){
+    if(await changeTradeStatus(id,"completed")){
+        showTrades("buy");
+    }
 }
 
 function tradeStatus(status){
