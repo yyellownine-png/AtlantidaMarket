@@ -255,18 +255,17 @@ def set_menu_button(url):
         print("Menu button error:",e)
 
 
+
 async def save_payment_method(request):
     import aiosqlite
 
     try:
         data = await request.json()
         seller_id = int(data.get("seller_id", 0))
-        crypto_send = str(data.get("crypto_send", "")).strip()
+        ton_wallet = str(data.get("ton_wallet", "")).strip()
+        usdt_wallet = str(data.get("usdt_wallet", "")).strip()
     except Exception:
-        return web.json_response(
-            {"ok": False, "error": "invalid_data"},
-            status=400
-        )
+        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
 
     if not seller_id:
         return web.json_response(
@@ -274,9 +273,25 @@ async def save_payment_method(request):
             status=400
         )
 
-    if not crypto_send.startswith("https://t.me/send"):
+    if not ton_wallet and not usdt_wallet:
         return web.json_response(
-            {"ok": False, "error": "invalid_crypto_send"},
+            {"ok": False, "error": "no_wallet"},
+            status=400
+        )
+
+    if ton_wallet and not (
+        ton_wallet.startswith("EQ") or
+        ton_wallet.startswith("UQ") or
+        ton_wallet.startswith("kQ")
+    ):
+        return web.json_response(
+            {"ok": False, "error": "invalid_ton_wallet"},
+            status=400
+        )
+
+    if usdt_wallet and not re.fullmatch(r"0x[a-fA-F0-9]{40}", usdt_wallet):
+        return web.json_response(
+            {"ok": False, "error": "invalid_usdt_erc20_wallet"},
             status=400
         )
 
@@ -286,6 +301,7 @@ async def save_payment_method(request):
                 seller_id INTEGER PRIMARY KEY,
                 crypto_send TEXT,
                 ton_wallet TEXT,
+                usdt_wallet TEXT,
                 card_info TEXT,
                 updated_at TEXT
             )
@@ -293,19 +309,21 @@ async def save_payment_method(request):
 
         await db.execute("""
             INSERT INTO seller_payment_methods
-                (seller_id, crypto_send, updated_at)
-            VALUES (?, ?, datetime('now'))
+                (seller_id, ton_wallet, usdt_wallet, updated_at)
+            VALUES (?, ?, ?, datetime('now'))
             ON CONFLICT(seller_id) DO UPDATE SET
-                crypto_send=excluded.crypto_send,
+                ton_wallet=excluded.ton_wallet,
+                usdt_wallet=excluded.usdt_wallet,
                 updated_at=excluded.updated_at
-        """, (seller_id, crypto_send))
+        """, (seller_id, ton_wallet, usdt_wallet))
 
         await db.commit()
 
     return web.json_response({
         "ok": True,
         "seller_id": seller_id,
-        "crypto_send": crypto_send
+        "ton_wallet": ton_wallet,
+        "usdt_wallet": usdt_wallet
     })
 
 
@@ -326,13 +344,14 @@ async def get_payment_method(request):
                 seller_id INTEGER PRIMARY KEY,
                 crypto_send TEXT,
                 ton_wallet TEXT,
+                usdt_wallet TEXT,
                 card_info TEXT,
                 updated_at TEXT
             )
         """)
 
         cur = await db.execute("""
-            SELECT seller_id, crypto_send
+            SELECT seller_id, ton_wallet, usdt_wallet
             FROM seller_payment_methods
             WHERE seller_id=?
         """, (seller_id,))
@@ -343,14 +362,16 @@ async def get_payment_method(request):
         return web.json_response({
             "ok": True,
             "connected": False,
-            "crypto_send": ""
+            "ton_wallet": "",
+            "usdt_wallet": ""
         })
 
     return web.json_response({
         "ok": True,
-        "connected": bool(row[1]),
+        "connected": bool(row[1] or row[2]),
         "seller_id": row[0],
-        "crypto_send": row[1] or ""
+        "ton_wallet": row[1] or "",
+        "usdt_wallet": row[2] or ""
     })
 
 
