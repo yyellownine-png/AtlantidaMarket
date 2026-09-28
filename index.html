@@ -865,15 +865,14 @@ async function getCryptoSend(){
 }
 
 async function saveCryptoSend(){
-  const ton = document
-    .getElementById("tonWallet")
-    .value
-    .trim();
+  const ton = document.getElementById("tonWallet").value.trim();
+  const usdt = document.getElementById("usdtWallet").value.trim();
+  const sellerId = Number(user()?.id || 0);
 
-  const usdt = document
-    .getElementById("usdtWallet")
-    .value
-    .trim();
+  if(!sellerId){
+    toast("⚠️ Открой маркет через Telegram");
+    return;
+  }
 
   if(!ton && !usdt){
     toast("⚠️ Укажи хотя бы один кошелёк");
@@ -909,23 +908,33 @@ async function saveCryptoSend(){
           "Content-Type":"application/json"
         },
         body:JSON.stringify({
-          seller_id:user().id,
+          seller_id:sellerId,
           ton_wallet:ton,
           usdt_wallet:usdt
         })
       }
     );
 
-    const result = await response.json();
+    const text = await response.text();
+
+    let result;
+    try{
+      result = JSON.parse(text);
+    }catch{
+      result = {ok:false, error:text};
+    }
 
     if(!response.ok || !result.ok){
-      throw new Error();
+      console.error("Payment API error:", response.status, result);
+      toast("❌ " + (result.message || result.error || "Ошибка сервера"));
+      return;
     }
 
     toast("✅ Кошельки сохранены");
 
   }catch(e){
-    toast("❌ Не удалось сохранить кошельки");
+    console.error("Payment request error:", e);
+    toast("❌ Ошибка соединения с сервером");
   }
 }
 
