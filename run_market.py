@@ -263,6 +263,116 @@ async def start_server():
     app.router.add_get("/api/listings",listings)
     app.router.add_post("/api/listings",create_listing)
     app.router.add_post("/api/trades",create_trade)
+    app.router.add_post("/api/payment-methods", save_payment_method)
+    app.router.add_get("/api/payment-methods/{seller_id}", get_payment_method)
+    app.router.add_delete("/api/payment-methods", delete_payment_method)
+
+
+async def save_payment_method(request):
+    try:
+        data = await request.json()
+        seller_id = int(data.get("seller_id", 0))
+        crypto_send = str(data.get("crypto_send", "")).strip()
+    except Exception:
+        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
+
+    if not seller_id:
+        return web.json_response({"ok": False, "error": "invalid_seller_id"}, status=400)
+
+    if not crypto_send.startswith("https://t.me/send"):
+        return web.json_response({"ok": False, "error": "invalid_crypto_send"}, status=400)
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS seller_payment_methods (
+                seller_id INTEGER PRIMARY KEY,
+                crypto_send TEXT,
+                ton_wallet TEXT,
+                card_info TEXT,
+                updated_at TEXT
+            )
+        """)
+
+        await db.execute("""
+            INSERT INTO seller_payment_methods
+                (seller_id, crypto_send, updated_at)
+            VALUES (?, ?, datetime('now'))
+            ON CONFLICT(seller_id) DO UPDATE SET
+                crypto_send=excluded.crypto_send,
+                updated_at=excluded.updated_at
+        """, (seller_id, crypto_send))
+
+        await db.commit()
+
+    return web.json_response({
+        "ok": True,
+        "seller_id": seller_id,
+        "crypto_send": crypto_send
+    })
+
+
+async def get_payment_method(request):
+    try:
+        seller_id = int(request.match_info["seller_id"])
+    except Exception:
+        return web.json_response(
+            {"ok": False, "error": "invalid_seller_id"},
+            status=400
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS seller_payment_methods (
+                seller_id INTEGER PRIMARY KEY,
+                crypto_send TEXT,
+                ton_wallet TEXT,
+                card_info TEXT,
+                updated_at TEXT
+            )
+        """)
+
+        cur = await db.execute("""
+            SELECT seller_id, crypto_send
+            FROM seller_payment_methods
+            WHERE seller_id=?
+        """, (seller_id,))
+
+        row = await cur.fetchone()
+
+    if not row:
+        return web.json_response({
+            "ok": True,
+            "connected": False,
+            "crypto_send": ""
+        })
+
+    return web.json_response({
+        "ok": True,
+        "connected": bool(row[1]),
+        "seller_id": row[0],
+        "crypto_send": row[1] or ""
+    })
+
+
+async def delete_payment_method(request):
+    try:
+        data = await request.json()
+        seller_id = int(data.get("seller_id", 0))
+    except Exception:
+        return web.json_response(
+            {"ok": False, "error": "invalid_data"},
+            status=400
+        )
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+            DELETE FROM seller_payment_methods
+            WHERE seller_id=?
+        """, (seller_id,))
+        await db.commit()
+
+    return web.json_response({"ok": True})
+
 
     app.router.add_static(
         "/",
