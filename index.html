@@ -479,24 +479,41 @@ body:before{
 <div class="modal" id="paymentModal">
   <div class="modalBox">
     <div class="modalHead">
-      <h2>💰 Получение оплаты</h2>
+      <h2>💰 Способы оплаты</h2>
       <button class="close" onclick="closePayment()">×</button>
     </div>
 
-    <div style="color:#9ba6b6;font-size:13px;margin-bottom:14px">
-      Укажи свою ссылку Crypto Bot <b>t.me/send...</b>.
-      Она будет использоваться покупателями для оплаты товаров.
+    <div style="color:#9ba6b6;font-size:13px;margin-bottom:16px">
+      Укажи публичные адреса кошельков, на которые покупатели будут отправлять оплату.
+      Seed-фразу и приватный ключ сюда вводить не нужно.
     </div>
 
     <div class="form">
+
+      <div style="font-weight:900;margin-bottom:6px">
+        💎 TON
+      </div>
+
       <input
-        id="cryptoSend"
-        placeholder="https://t.me/send..."
+        id="tonWallet"
+        placeholder="EQ... / UQ..."
         autocomplete="off"
+        spellcheck="false"
+      >
+
+      <div style="font-weight:900;margin:8px 0 6px">
+        💵 USDT ERC-20
+      </div>
+
+      <input
+        id="usdtWallet"
+        placeholder="0x..."
+        autocomplete="off"
+        spellcheck="false"
       >
 
       <button class="submit" onclick="saveCryptoSend()">
-        🤖 Сохранить Crypto Bot
+        💾 Сохранить кошельки
       </button>
 
       <button
@@ -504,8 +521,9 @@ body:before{
         onclick="deleteCryptoSend()"
         style="border:1px solid #343d49;background:#171d26;color:#ff7b7b;border-radius:14px;padding:13px;font-weight:800"
       >
-        🗑️ Отвязать
+        🗑️ Отвязать кошельки
       </button>
+
     </div>
   </div>
 </div>
@@ -816,8 +834,11 @@ async function showProfile(){
 
   const connected = await getCryptoSend();
 
-  document.getElementById("cryptoSend").value =
-    connected?.crypto_send || "";
+  document.getElementById("tonWallet").value =
+    connected?.ton_wallet || "";
+
+  document.getElementById("usdtWallet").value =
+    connected?.usdt_wallet || "";
 
   document.getElementById("paymentModal").classList.add("show");
 }
@@ -829,40 +850,71 @@ function closePayment(){
 async function getCryptoSend(){
   try{
     const response = await fetch(
-      API + "/api/payment-methods/" + encodeURIComponent(user().id)
+      API + "/api/payment-methods/" +
+      encodeURIComponent(user().id)
     );
 
     if(!response.ok) throw new Error();
 
     return await response.json();
+
   }catch(e){
-    toast("❌ Не удалось загрузить способ оплаты");
+    toast("❌ Не удалось загрузить кошельки");
     return null;
   }
 }
 
 async function saveCryptoSend(){
-  const value = document
-    .getElementById("cryptoSend")
+  const ton = document
+    .getElementById("tonWallet")
     .value
     .trim();
 
-  if(!value.startsWith("https://t.me/send")){
-    toast("⚠️ Нужна ссылка https://t.me/send...");
+  const usdt = document
+    .getElementById("usdtWallet")
+    .value
+    .trim();
+
+  if(!ton && !usdt){
+    toast("⚠️ Укажи хотя бы один кошелёк");
+    return;
+  }
+
+  if(
+    ton &&
+    !(
+      ton.startsWith("EQ") ||
+      ton.startsWith("UQ") ||
+      ton.startsWith("kQ")
+    )
+  ){
+    toast("⚠️ Неверный TON-адрес");
+    return;
+  }
+
+  if(
+    usdt &&
+    !/^0x[a-fA-F0-9]{40}$/.test(usdt)
+  ){
+    toast("⚠️ Неверный USDT ERC-20 адрес");
     return;
   }
 
   try{
-    const response = await fetch(API + "/api/payment-methods",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        seller_id:user().id,
-        crypto_send:value
-      })
-    });
+    const response = await fetch(
+      API + "/api/payment-methods",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          seller_id:user().id,
+          ton_wallet:ton,
+          usdt_wallet:usdt
+        })
+      }
+    );
 
     const result = await response.json();
 
@@ -870,30 +922,37 @@ async function saveCryptoSend(){
       throw new Error();
     }
 
-    toast("✅ Crypto Bot привязан");
+    toast("✅ Кошельки сохранены");
+
   }catch(e){
-    toast("❌ Не удалось сохранить");
+    toast("❌ Не удалось сохранить кошельки");
   }
 }
 
 async function deleteCryptoSend(){
   try{
-    const response = await fetch(API + "/api/payment-methods",{
-      method:"DELETE",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        seller_id:user().id
-      })
-    });
+    const response = await fetch(
+      API + "/api/payment-methods",
+      {
+        method:"DELETE",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          seller_id:user().id
+        })
+      }
+    );
 
     if(!response.ok) throw new Error();
 
-    document.getElementById("cryptoSend").value = "";
-    toast("✅ Crypto Bot отвязан");
+    document.getElementById("tonWallet").value = "";
+    document.getElementById("usdtWallet").value = "";
+
+    toast("✅ Кошельки отвязаны");
+
   }catch(e){
-    toast("❌ Не удалось отвязать");
+    toast("❌ Не удалось отвязать кошельки");
   }
 }
 
