@@ -736,6 +736,27 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   }
 }
 
+
+.buy-card-btn{
+  display:block !important;
+  width:100%;
+  margin-top:10px;
+  min-height:42px;
+  padding:10px 14px;
+  border:0;
+  border-radius:13px;
+  background:#ffffff;
+  color:#000000;
+  font-size:14px;
+  font-weight:900;
+  cursor:pointer;
+  position:relative;
+  z-index:5;
+}
+.buy-card-btn:active{
+  transform:scale(.98);
+}
+
 </style>
 </head>
 <body>
@@ -1109,10 +1130,9 @@ function card(x){
       </div>
 
       <button
-        class="primary"
+        class="buy-card-btn"
         type="button"
         onclick="event.stopPropagation();createTrade(${Number(x.id)})"
-        style="width:100%;margin-top:10px;min-height:42px;border-radius:13px;font-weight:900;"
       >
         🛒 Купить
       </button>
