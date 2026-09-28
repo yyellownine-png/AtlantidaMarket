@@ -220,9 +220,21 @@ async def create_listing(request):
     currency = str(data.get("currency") or "TON").upper().strip()
     description = str(data.get("description") or "").strip()
 
-    if not seller_id or not name or not price:
+    if not seller_id:
         return web.json_response(
-            {"ok": False, "error": "Заполни название и цену"},
+            {"ok": False, "error": "Не удалось определить пользователя Telegram"},
+            status=400
+        )
+
+    if not name:
+        return web.json_response(
+            {"ok": False, "error": "Не указано название товара"},
+            status=400
+        )
+
+    if not price:
+        return web.json_response(
+            {"ok": False, "error": "Не указана цена товара"},
             status=400
         )
 
