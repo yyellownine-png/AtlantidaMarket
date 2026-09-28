@@ -459,10 +459,16 @@ async def get_public_chat(request):
                 user_id INTEGER NOT NULL,
                 username TEXT DEFAULT '',
                 first_name TEXT DEFAULT '',
+                photo_url TEXT DEFAULT '',
                 text TEXT NOT NULL,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        try:
+            await db.execute("ALTER TABLE public_chat ADD COLUMN photo_url TEXT DEFAULT ''")
+            await db.commit()
+        except Exception:
+            pass
 
         cur = await db.execute("""
             SELECT
@@ -470,6 +476,7 @@ async def get_public_chat(request):
                 user_id,
                 username,
                 first_name,
+                photo_url,
                 text,
                 created_at
             FROM public_chat
@@ -487,8 +494,9 @@ async def get_public_chat(request):
             "user_id": r[1],
             "username": r[2] or "",
             "first_name": r[3] or "Игрок",
-            "text": r[4],
-            "created_at": r[5]
+            "photo_url": r[4] or "",
+            "text": r[5],
+            "created_at": r[6]
         })
 
     return web.json_response({
@@ -509,6 +517,10 @@ async def send_public_chat(request):
         first_name = str(
             data.get("first_name", "Игрок")
         )[:64]
+
+        photo_url = str(
+            data.get("photo_url", "")
+        )[:1000]
 
         text = str(
             data.get("text", "")
@@ -540,10 +552,16 @@ async def send_public_chat(request):
                 user_id INTEGER NOT NULL,
                 username TEXT DEFAULT '',
                 first_name TEXT DEFAULT '',
+                photo_url TEXT DEFAULT '',
                 text TEXT NOT NULL,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        try:
+            await db.execute("ALTER TABLE public_chat ADD COLUMN photo_url TEXT DEFAULT ''")
+            await db.commit()
+        except Exception:
+            pass
 
         now = datetime.now().isoformat(timespec="seconds")
 
@@ -553,14 +571,16 @@ async def send_public_chat(request):
                 user_id,
                 username,
                 first_name,
+                photo_url,
                 text,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             user_id,
             username,
             first_name,
+            photo_url,
             text,
             now
         ))
@@ -576,6 +596,7 @@ async def send_public_chat(request):
             "user_id": user_id,
             "username": username,
             "first_name": first_name,
+            "photo_url": photo_url,
             "text": text,
             "created_at": now
         }
