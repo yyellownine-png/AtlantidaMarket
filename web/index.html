@@ -1239,6 +1239,7 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   <button class="main" onclick="showPage('home')">⌂<br>Главная</button>
   <button onclick="showPage('catalog')">◈<br>Каталог</button>
   <button onclick="showPage('favorites')">♡<br>Избранное</button>
+  <button onclick="showPage('sell')">＋<br>Продать</button>
   <button onclick="showPage('profile')">♙<br>Профиль</button>
 </nav>
 
@@ -1344,7 +1345,8 @@ function showPage(page){
       (page==="home" && i===0) ||
       (page==="catalog" && i===1) ||
       (page==="favorites" && i===2) ||
-      (page==="profile" && i===3)
+      (page==="sell" && i===3) ||
+      (page==="profile" && i===4)
     );
 
   });
