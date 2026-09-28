@@ -854,6 +854,92 @@ function openCheckout(x){
  document.getElementById("modal").classList.add("show");
 }
 
+
+async function showTradePayment(x, tradeId){
+    const result = document.getElementById("checkoutResult");
+    if(!result) return;
+
+    try{
+        const r = await fetch(
+            API + "/api/payment-methods/" + encodeURIComponent(x.seller_id)
+        );
+
+        const d = await r.json();
+
+        let wallet = "";
+
+        if(x.currency === "TON"){
+            wallet = d.ton_wallet || "";
+        }else if(x.currency === "USDT"){
+            wallet = d.usdt_wallet || "";
+        }
+
+        if(!wallet){
+            result.innerHTML = `
+              <div class="payment" style="margin-top:14px">
+                ❌ Продавец ещё не подключил реквизиты для ${escapeHTML(x.currency)}.
+              </div>`;
+            return;
+        }
+
+        result.innerHTML = `
+          <div class="payment" style="margin-top:14px">
+            <div style="font-size:20px">
+              ${x.currency === "TON" ? "💎" : "💵"}
+            </div>
+
+            <b>Реквизиты для оплаты</b>
+
+            <div style="
+              margin-top:10px;
+              padding:12px;
+              background:#0b1017;
+              border-radius:10px;
+              word-break:break-all;
+              font-size:12px;
+            ">
+              ${escapeHTML(wallet)}
+            </div>
+
+            <button class="primary" style="margin-top:10px"
+              onclick='copyWallet(${JSON.stringify(wallet)})'>
+              📋 Скопировать адрес
+            </button>
+
+            <div style="
+              margin-top:10px;
+              color:#8993a3;
+              font-size:11px;
+              line-height:1.5;
+            ">
+              Сумма к оплате:
+              <b>${escapeHTML(String(x.price))} ${escapeHTML(x.currency)}</b>
+            </div>
+
+            <button class="primary" style="margin-top:10px"
+              onclick="markTradePaid(${tradeId})">
+              💳 Я оплатил
+            </button>
+          </div>
+        `;
+
+    }catch(e){
+        result.innerHTML = `
+          <div class="payment">
+            ❌ Не удалось получить реквизиты продавца.
+          </div>`;
+    }
+}
+
+async function copyWallet(wallet){
+    try{
+        await navigator.clipboard.writeText(wallet);
+        toast("Адрес скопирован");
+    }catch(e){
+        toast("Не удалось скопировать адрес");
+    }
+}
+
 async function createTrade(x){
  const u=user();
  const selected=document.querySelector('input[name="checkoutCurrency"]:checked');
@@ -916,6 +1002,8 @@ async function createTrade(x){
        </div>
      `;
    }
+
+   await showTradePayment(x, d.trade_id || d.id);
 
    toast("Сделка создана");
 
