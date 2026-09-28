@@ -2550,6 +2550,13 @@ async function createListing(){
   const description=document.getElementById("sellDesc").value.trim();
 
   if(!title || !price){
+    alert(
+      "DEBUG\\n" +
+      "Название: [" + title + "]\\n" +
+      "Цена: [" + price + "]\\n" +
+      "sellTitle существует: " + !!document.getElementById("sellTitle") + "\\n" +
+      "sellPrice существует: " + !!document.getElementById("sellPrice")
+    );
     toast("Заполни название и цену");
     return;
   }
