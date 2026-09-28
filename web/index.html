@@ -1312,7 +1312,20 @@ const CATEGORIES = [
 
 
 function user(){
-  return tg?.initDataUnsafe?.user || {
+  const u = tg?.initDataUnsafe?.user;
+
+  if(u?.id){
+    return u;
+  }
+
+  console.log("ATLANTIDA TELEGRAM DEBUG:", {
+    tg_exists: !!tg,
+    initData: tg?.initData || "",
+    initDataUnsafe: tg?.initDataUnsafe || {},
+    user: u || null
+  });
+
+  return {
     id: 0,
     first_name: "Игрок",
     username: "demo"
