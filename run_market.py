@@ -20,6 +20,41 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(BASE, "web")
 
 
+DB = os.path.join(BASE, "atlantida.db")
+
+
+async def init_db():
+    import aiosqlite
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS listings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seller_id INTEGER NOT NULL,
+                category TEXT NOT NULL,
+                name TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                price TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at TEXT NOT NULL
+            )
+        """)
+
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                listing_id INTEGER NOT NULL,
+                buyer_id INTEGER NOT NULL,
+                seller_id INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'created',
+                created_at TEXT NOT NULL
+            )
+        """)
+
+        await db.commit()
+
+
 async def index(request):
     return web.FileResponse(
         os.path.join(WEB, "index.html")
