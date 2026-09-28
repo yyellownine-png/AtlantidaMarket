@@ -1046,7 +1046,7 @@ function render(){
   const sourceListings =
     marketCurrencyFilter==="all"
       ? listings
-      : sourceListings.filter(x=>
+      : listings.filter(x=>
           String(x.currency||"").toUpperCase()===
           marketCurrencyFilter
         );
@@ -1091,7 +1091,7 @@ function card(x){
         class="fav"
         onclick="event.stopPropagation();toggleFavorite(${Number(x.id)})"
       >
-        ${fav?"❤️":"🤍"}
+        ${fav?"❤️":"♡"}
       </button>
 
       <div class="card-icon">
@@ -1108,10 +1108,18 @@ function card(x){
         ${esc(x.price)} ${esc(x.currency || "TON")}
       </div>
 
+      <button
+        class="primary"
+        type="button"
+        onclick="event.stopPropagation();createTrade(${Number(x.id)})"
+        style="width:100%;margin-top:10px;min-height:42px;border-radius:13px;font-weight:900;"
+      >
+        🛒 Купить
+      </button>
+
     </div>
   `;
 }
-
 
 function toggleFavorite(id){
 
