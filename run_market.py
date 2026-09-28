@@ -448,6 +448,7 @@ async def update_trade_status(request):
     new_status = str(data.get("status") or "")
 
     allowed = {
+        "paid",
         "delivered",
         "completed",
         "cancelled"
@@ -478,7 +479,14 @@ async def update_trade_status(request):
 
         buyer_id, seller_id, status = row
 
-        if new_status == "delivered":
+        if new_status == "paid":
+            if user_id != seller_id or status != "pending":
+                return web.json_response(
+                    {"ok": False, "error": "Нельзя подтвердить оплату сейчас"},
+                    status=403
+                )
+
+        elif new_status == "delivered":
             if user_id != seller_id or status != "paid":
                 return web.json_response(
                     {"ok": False, "error": "Нельзя передать товар сейчас"},
