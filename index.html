@@ -868,6 +868,7 @@ async function saveCryptoSend(){
   const ton = document.getElementById("tonWallet").value.trim();
   const usdt = document.getElementById("usdtWallet").value.trim();
   const sellerId = Number(user()?.id || 0);
+  alert("Telegram ID: " + sellerId);
 
   if(!sellerId){
     toast("⚠️ Открой маркет через Telegram");
