@@ -316,6 +316,138 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 
 
 
+
+/* PREMIUM REVIEWS UI */
+
+.reviews-summary{
+  margin:14px 0;
+  padding:18px;
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(255,194,70,.14),transparent 45%),
+    linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.reviews-score{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.reviews-score-number{
+  font-size:32px;
+  font-weight:950;
+  letter-spacing:-1px;
+  color:#fff;
+}
+
+.reviews-stars{
+  color:#ffd45c;
+  font-size:18px;
+  letter-spacing:1px;
+}
+
+.reviews-count{
+  margin-top:5px;
+  color:#7e8aa5;
+  font-size:12px;
+}
+
+.review-card{
+  margin:10px 0;
+  padding:15px;
+  border-radius:18px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.065);
+}
+
+.review-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.review-author{
+  color:#fff;
+  font-size:13px;
+  font-weight:850;
+}
+
+.review-date{
+  color:#66728d;
+  font-size:10px;
+}
+
+.review-rating{
+  margin-top:7px;
+  color:#ffd45c;
+  font-size:14px;
+}
+
+.review-text{
+  margin-top:9px;
+  color:#aeb7ce;
+  font-size:13px;
+  line-height:1.5;
+}
+
+.review-form{
+  margin-top:14px;
+  padding:16px;
+  border-radius:20px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.065);
+}
+
+.review-form textarea{
+  width:100%;
+  min-height:90px;
+  margin-top:10px;
+  padding:13px;
+  resize:vertical;
+  border-radius:15px;
+  border:1px solid rgba(100,180,255,.14);
+  background:rgba(5,8,18,.7);
+  color:#fff;
+  outline:none;
+  box-sizing:border-box;
+}
+
+.review-form textarea:focus{
+  border-color:rgba(64,205,255,.5);
+}
+
+.review-stars-select{
+  display:flex;
+  gap:7px;
+  margin-top:10px;
+}
+
+.review-star{
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  color:#68738d;
+  border-radius:12px;
+  width:42px;
+  height:40px;
+  font-size:18px;
+  cursor:pointer;
+}
+
+.review-star.active{
+  color:#ffd45c;
+  border-color:rgba(255,212,92,.35);
+  background:rgba(255,212,92,.08);
+}
+
+@media(max-width:430px){
+  .reviews-score-number{
+    font-size:28px;
+  }
+}
+
 /* PREMIUM TRADE DETAILS */
 
 .trade-detail-hero{
@@ -816,7 +948,7 @@ function renderFavorites(){
 }
 
 
-function openProduct(id){
+async function openProduct(id){
 
   const x=listings.find(
     a=>Number(a.id)===Number(id)
@@ -850,7 +982,7 @@ function openProduct(id){
     </div>
 
     <div class="info">
-      <b>Описаниеание</b><br>
+      <b>Описание</b><br>
       ${esc(x.description || "Без описания")}
     </div>
 
@@ -860,6 +992,14 @@ function openProduct(id){
       ${x.seller_username
         ? " @" + esc(x.seller_username)
         : ""}
+    </div>
+
+    <div id="sellerReviewsBox">
+      <div class="reviews-summary">
+        <div class="reviews-count">
+          Загрузка рейтинга...
+        </div>
+      </div>
     </div>
 
     <button
@@ -872,6 +1012,14 @@ function openProduct(id){
   `;
 
   modal.classList.add("show");
+
+  const reviews=await loadSellerReviews(x.seller_id);
+
+  const box=document.getElementById("sellerReviewsBox");
+
+  if(box){
+    box.innerHTML=renderReviews(reviews);
+  }
 }
 
 
@@ -1090,6 +1238,136 @@ async function showTrades(type){
   }
 }
 
+
+async function loadSellerReviews(sellerId){
+
+  try{
+
+    const res=await fetch(
+      API+"/api/reviews?seller_id="+
+      encodeURIComponent(sellerId)
+    );
+
+    const data=await res.json();
+
+    if(!data.ok){
+      return {
+        average:0,
+        count:0,
+        reviews:[]
+      };
+    }
+
+    return {
+      average:Number(data.average || 0),
+      count:Number(data.count || 0),
+      reviews:Array.isArray(data.reviews)
+        ? data.reviews
+        : []
+    };
+
+  }catch(e){
+
+    return {
+      average:0,
+      count:0,
+      reviews:[]
+    };
+
+  }
+}
+
+function reviewStars(rating){
+
+  const n=Math.max(
+    0,
+    Math.min(5,Number(rating)||0)
+  );
+
+  return "★".repeat(n)+"☆".repeat(5-n);
+}
+
+function renderReviews(data){
+
+  if(!data || !data.count){
+
+    return `
+      <div class="reviews-summary">
+        <div class="reviews-score">
+          <div class="reviews-score-number">0.0</div>
+          <div>
+            <div class="reviews-stars">☆☆☆☆☆</div>
+            <div class="reviews-count">
+              Пока нет отзывов
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+  }
+
+  return `
+    <div class="reviews-summary">
+
+      <div class="reviews-score">
+
+        <div class="reviews-score-number">
+          ${Number(data.average).toFixed(1)}
+        </div>
+
+        <div>
+          <div class="reviews-stars">
+            ${reviewStars(data.average)}
+          </div>
+
+          <div class="reviews-count">
+            ${Number(data.count)} отзывов
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    ${data.reviews.map(r=>`
+
+      <div class="review-card">
+
+        <div class="review-head">
+
+          <div class="review-author">
+            ${esc(r.first_name || r.username || "Пользователь")}
+          </div>
+
+          <div class="review-date">
+            ${esc(
+              String(r.created_at || "")
+                .slice(0,10)
+            )}
+          </div>
+
+        </div>
+
+        <div class="review-rating">
+          ${reviewStars(r.rating)}
+        </div>
+
+        ${
+          r.text
+          ? `
+            <div class="review-text">
+              ${esc(r.text)}
+            </div>
+          `
+          : ""
+        }
+
+      </div>
+
+    `).join("")}
+  `;
+}
 
 async function openTrade(tradeId,type){
 
