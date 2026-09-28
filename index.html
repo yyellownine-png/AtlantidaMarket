@@ -1768,7 +1768,7 @@ loadWallets();
 
   <div class="chat-input">
    <input id="publicChatInput" type="text" maxlength="500"
-          placeholder="Написати повідомлення..."
+          placeholder="Написать сообщение..."
           onkeydown="if(event.key==='Enter') sendPublicMessage()">
    <button class="chat-send" onclick="sendPublicMessage()">➤</button>
   </div>
@@ -1843,7 +1843,7 @@ async function loadPublicChat(forceScroll=false){
 
    if(!data.messages || !data.messages.length){
      box.innerHTML =
-       '<div class="chat-empty">Поки що повідомлень немає.<br>Напиши першим 👋</div>';
+       '<div class="chat-empty">Пока сообщений нет.<br>Напиши первым 👋</div>';
      publicChatLastId = 0;
      return;
    }
@@ -1852,7 +1852,7 @@ async function loadPublicChat(forceScroll=false){
      data.messages[data.messages.length - 1].id || 0
    );
 
-   // Не перемальовуємо весь чат, якщо нічого нового не прийшло.
+   // Не перерисовываем весь чат, если ничего нового не пришло.
    if(!forceScroll && newestId === publicChatLastId){
      return;
    }
@@ -1955,7 +1955,7 @@ async function sendPublicMessage(){
    const data = await res.json();
 
    if(!data.ok){
-     alert(data.error || "Не вдалося відправити повідомлення");
+     alert(data.error || "Не удалось отправить сообщение");
      return;
    }
 
@@ -1964,7 +1964,7 @@ async function sendPublicMessage(){
    input.focus();
 
  }catch(e){
-   alert("Помилка підключення до чату");
+   alert("Ошибка подключения к чату");
    console.error(e);
  }finally{
    input.disabled = false;

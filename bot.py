@@ -11,6 +11,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
+    WebAppInfo,
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -143,7 +144,12 @@ def main_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="🛒 Купить"),
+                KeyboardButton(
+                    text="🛒 Купить",
+                    web_app=WebAppInfo(
+                        url="https://atlantidamarket.onrender.com/"
+                    )
+                ),
                 KeyboardButton(text="📤 Продать")
             ],
             [
