@@ -350,41 +350,49 @@ async def get_payment_method(request):
             status=400
         )
 
-    async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS seller_payment_methods (
-                seller_id INTEGER PRIMARY KEY,
-                crypto_send TEXT,
-                ton_wallet TEXT,
-                usdt_wallet TEXT,
-                card_info TEXT,
-                updated_at TEXT
+    try:
+        async with aiosqlite.connect(DB) as db:
+            cur = await db.execute(
+                "PRAGMA table_info(seller_payment_methods)"
             )
-        """)
+            columns = [row[1] for row in await cur.fetchall()]
 
-        cur = await db.execute("""
-            SELECT seller_id, ton_wallet, usdt_wallet
-            FROM seller_payment_methods
-            WHERE seller_id=?
-        """, (seller_id,))
+            if "usdt_wallet" not in columns:
+                await db.execute(
+                    "ALTER TABLE seller_payment_methods ADD COLUMN usdt_wallet TEXT"
+                )
+                await db.commit()
 
-        row = await cur.fetchone()
+            cur = await db.execute("""
+                SELECT seller_id, ton_wallet, usdt_wallet
+                FROM seller_payment_methods
+                WHERE seller_id=?
+            """, (seller_id,))
 
-    if not row:
+            row = await cur.fetchone()
+
+        if not row:
+            return web.json_response({
+                "ok": True,
+                "connected": False,
+                "ton_wallet": "",
+                "usdt_wallet": ""
+            })
+
         return web.json_response({
             "ok": True,
-            "connected": False,
-            "ton_wallet": "",
-            "usdt_wallet": ""
+            "connected": bool(row[1] or row[2]),
+            "seller_id": row[0],
+            "ton_wallet": row[1] or "",
+            "usdt_wallet": row[2] or ""
         })
 
-    return web.json_response({
-        "ok": True,
-        "connected": bool(row[1] or row[2]),
-        "seller_id": row[0],
-        "ton_wallet": row[1] or "",
-        "usdt_wallet": row[2] or ""
-    })
+    except Exception as e:
+        return web.json_response({
+            "ok": False,
+            "error": type(e).__name__,
+            "message": str(e)
+        }, status=500)
 
 
 async def delete_payment_method(request):
