@@ -314,6 +314,87 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   }
 }
 
+
+/* PREMIUM TRADE CARDS */
+
+.trade-card{
+  position:relative;
+  margin:10px 0;
+  padding:16px;
+  border-radius:20px;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:
+    0 12px 35px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.035);
+  cursor:pointer;
+  transition:.2s ease;
+  overflow:hidden;
+}
+
+.trade-card:before{
+  content:"";
+  position:absolute;
+  width:110px;
+  height:110px;
+  right:-55px;
+  top:-55px;
+  border-radius:50%;
+  background:rgba(35,190,255,.12);
+  filter:blur(20px);
+  pointer-events:none;
+}
+
+.trade-card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(75,205,255,.2);
+  box-shadow:0 16px 42px rgba(0,0,0,.3);
+}
+
+.trade-card-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.trade-card-title{
+  font-size:15px;
+  font-weight:900;
+}
+
+.trade-card-id{
+  color:#71809c;
+  font-size:11px;
+  font-weight:700;
+}
+
+.trade-card-price{
+  margin-top:13px;
+  font-size:21px;
+  font-weight:950;
+  letter-spacing:-.4px;
+  background:linear-gradient(90deg,#fff,#7ce6ff);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.trade-card-meta{
+  margin-top:5px;
+  color:#7e8aa5;
+  font-size:12px;
+}
+
+.trade-card-status{
+  margin-top:12px;
+  padding-top:11px;
+  border-top:1px solid rgba(255,255,255,.055);
+  font-size:12px;
+  font-weight:800;
+}
+
 </style>
 </head>
 <body>
@@ -895,22 +976,30 @@ async function showTrades(type){
     box.innerHTML=filtered.map(x=>`
 
       <div
-        class="wallet"
+        class="trade-card"
         onclick="openTrade(${Number(x.id)},'${type}')"
       >
 
-        <b>Сделка #${Number(x.id)}</b>
+        <div class="trade-card-head">
+          <div class="trade-card-title">
+            🤝 Сделка #${Number(x.id)}
+          </div>
 
-        <div class="meta">
-          Объявление #${Number(x.listing_id)}
+          <div class="trade-card-id">
+            #${Number(x.listing_id)}
+          </div>
         </div>
 
-        <div class="price">
+        <div class="trade-card-price">
           ${esc(x.amount || "—")}
           ${esc(x.currency || "")}
         </div>
 
-        <div style="margin-top:7px">
+        <div class="trade-card-meta">
+          Объявление #${Number(x.listing_id)}
+        </div>
+
+        <div class="trade-card-status">
           ${tradeStatus(x.status)}
         </div>
 
