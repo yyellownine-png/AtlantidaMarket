@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Atlantida Market</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js?v=2"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -868,7 +868,6 @@ async function saveCryptoSend(){
   const ton = document.getElementById("tonWallet").value.trim();
   const usdt = document.getElementById("usdtWallet").value.trim();
   const sellerId = Number(user()?.id || 0);
-  alert("Telegram ID: " + sellerId);
 
   if(!sellerId){
     toast("⚠️ Открой маркет через Telegram");
