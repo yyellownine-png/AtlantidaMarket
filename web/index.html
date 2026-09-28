@@ -245,12 +245,12 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 </section>
 
 <div class="searchbox">
-  <input id="search" placeholder="Пошук товарів..." autocomplete="off">
+  <input id="search" placeholder="Поиск товарів..." autocomplete="off">
 </div>
 
 <section class="section">
   <div class="section-title">
-    <h2>Категорії</h2>
+    <h2>Категории</h2>
     <span id="count"></span>
   </div>
   <div id="homeCats"></div>
@@ -264,17 +264,17 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 </section>
 
 <section class="section" id="sellSection">
-  <div class="section-title"><h2>Продати</h2></div>
-  <input id="sellTitle" placeholder="Назва">
+  <div class="section-title"><h2>Продать</h2></div>
+  <input id="sellTitle" placeholder="Название">
   <select id="sellCategory"></select>
-  <input id="sellAmount" placeholder="Кількість">
-  <input id="sellPrice" placeholder="Ціна">
+  <input id="sellAmount" placeholder="Количество">
+  <input id="sellPrice" placeholder="Цена">
   <select id="sellCurrency"></select>
-  <textarea id="sellDesc" placeholder="Опис"></textarea>
+  <textarea id="sellDesc" placeholder="Описание"></textarea>
 </section>
 
 <section class="section" id="profileSection">
-  <div class="section-title"><h2>Профіль</h2></div>
+  <div class="section-title"><h2>Профиль</h2></div>
   <div id="avatar"></div>
   <div id="profileName"></div>
   <div id="profileUsername"></div>
@@ -298,10 +298,10 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 </div>
 
 <nav class="bottom-nav">
-  <button class="main" onclick="showPage('home')">⌂<br>Головна</button>
+  <button class="main" onclick="showPage('home')">⌂<br>Главная</button>
   <button onclick="showPage('catalog')">◈<br>Каталог</button>
-  <button onclick="showPage('favorites')">♡<br>Обране</button>
-  <button onclick="showPage('profile')">♙<br>Профіль</button>
+  <button onclick="showPage('favorites')">♡<br>Избранное</button>
+  <button onclick="showPage('profile')">♙<br>Профиль</button>
 </nav>
 
 <script>
@@ -605,7 +605,7 @@ function openProduct(id){
     </div>
 
     <div class="info">
-      <b>Описание</b><br>
+      <b>Описаниеание</b><br>
       ${esc(x.description || "Без описания")}
     </div>
 
