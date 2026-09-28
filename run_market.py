@@ -425,6 +425,115 @@ async def start_server():
     app.router.add_get("/api/listings", listings)
     app.router.add_post("/api/listings", create_listing)
     app.router.add_post("/api/trades", create_trade)
+app.router.add_get("/api/trades", get_trades)
+app.router.add_patch("/api/trades/status", update_trade_status)
+
+
+
+async def get_trades(request):
+    import aiosqlite
+
+    try:
+        user_id = int(request.query.get("user_id", 0))
+    except Exception:
+        return web.json_response({"ok": False, "error": "invalid_user_id"}, status=400)
+
+    if not user_id:
+        return web.json_response({"ok": False, "error": "invalid_user_id"}, status=400)
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                listing_id INTEGER,
+                buyer_id INTEGER,
+                seller_id INTEGER,
+                amount TEXT,
+                currency TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.commit()
+
+        cur = await db.execute("""
+            SELECT id, listing_id, buyer_id, seller_id,
+                   amount, currency, status, created_at
+            FROM trades
+            WHERE buyer_id=? OR seller_id=?
+            ORDER BY id DESC
+        """, (user_id, user_id))
+
+        rows = await cur.fetchall()
+
+    return web.json_response({
+        "ok": True,
+        "trades": [
+            {
+                "id": r[0],
+                "listing_id": r[1],
+                "buyer_id": r[2],
+                "seller_id": r[3],
+                "amount": r[4],
+                "currency": r[5],
+                "status": r[6],
+                "created_at": r[7]
+            }
+            for r in rows
+        ]
+    })
+
+
+async def update_trade_status(request):
+    import aiosqlite
+
+    try:
+        data = await request.json()
+        trade_id = int(data.get("trade_id", 0))
+        user_id = int(data.get("user_id", 0))
+        status = str(data.get("status", "")).strip()
+    except Exception:
+        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
+
+    allowed = {
+        "pending",
+        "paid",
+        "delivered",
+        "completed",
+        "cancelled"
+    }
+
+    if not trade_id or not user_id or status not in allowed:
+        return web.json_response({"ok": False, "error": "invalid_trade"}, status=400)
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+            SELECT buyer_id, seller_id
+            FROM trades
+            WHERE id=?
+        """, (trade_id,))
+        row = await cur.fetchone()
+
+        if not row:
+            return web.json_response({"ok": False, "error": "trade_not_found"}, status=404)
+
+        if user_id not in (row[0], row[1]):
+            return web.json_response({"ok": False, "error": "access_denied"}, status=403)
+
+        await db.execute("""
+            UPDATE trades
+            SET status=?
+            WHERE id=?
+        """, (status, trade_id))
+
+        await db.commit()
+
+    return web.json_response({
+        "ok": True,
+        "trade_id": trade_id,
+        "status": status
+    })
+
 
     app.router.add_post(
         "/api/payment-methods",
