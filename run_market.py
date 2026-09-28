@@ -255,32 +255,30 @@ def set_menu_button(url):
         print("Menu button error:",e)
 
 
-async def start_server():
-
-    app=web.Application()
-
-    app.router.add_get("/",index)
-    app.router.add_get("/api/listings",listings)
-    app.router.add_post("/api/listings",create_listing)
-    app.router.add_post("/api/trades",create_trade)
-    app.router.add_post("/api/payment-methods", save_payment_method)
-    app.router.add_get("/api/payment-methods/{seller_id}", get_payment_method)
-    app.router.add_delete("/api/payment-methods", delete_payment_method)
-
-
 async def save_payment_method(request):
+    import aiosqlite
+
     try:
         data = await request.json()
         seller_id = int(data.get("seller_id", 0))
         crypto_send = str(data.get("crypto_send", "")).strip()
     except Exception:
-        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
+        return web.json_response(
+            {"ok": False, "error": "invalid_data"},
+            status=400
+        )
 
     if not seller_id:
-        return web.json_response({"ok": False, "error": "invalid_seller_id"}, status=400)
+        return web.json_response(
+            {"ok": False, "error": "invalid_seller_id"},
+            status=400
+        )
 
     if not crypto_send.startswith("https://t.me/send"):
-        return web.json_response({"ok": False, "error": "invalid_crypto_send"}, status=400)
+        return web.json_response(
+            {"ok": False, "error": "invalid_crypto_send"},
+            status=400
+        )
 
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
@@ -312,6 +310,8 @@ async def save_payment_method(request):
 
 
 async def get_payment_method(request):
+    import aiosqlite
+
     try:
         seller_id = int(request.match_info["seller_id"])
     except Exception:
@@ -355,6 +355,8 @@ async def get_payment_method(request):
 
 
 async def delete_payment_method(request):
+    import aiosqlite
+
     try:
         data = await request.json()
         seller_id = int(data.get("seller_id", 0))
@@ -374,15 +376,36 @@ async def delete_payment_method(request):
     return web.json_response({"ok": True})
 
 
-    app.router.add_static(
-        "/",
-        WEB
+async def start_server():
+
+    app = web.Application()
+
+    app.router.add_get("/", index)
+    app.router.add_get("/api/listings", listings)
+    app.router.add_post("/api/listings", create_listing)
+    app.router.add_post("/api/trades", create_trade)
+
+    app.router.add_post(
+        "/api/payment-methods",
+        save_payment_method
     )
 
-    runner=web.AppRunner(app)
+    app.router.add_get(
+        "/api/payment-methods/{seller_id}",
+        get_payment_method
+    )
+
+    app.router.add_delete(
+        "/api/payment-methods",
+        delete_payment_method
+    )
+
+    app.router.add_static("/", WEB)
+
+    runner = web.AppRunner(app)
     await runner.setup()
 
-    site=web.TCPSite(
+    site = web.TCPSite(
         runner,
         "0.0.0.0",
         int(os.getenv("PORT", "8080"))
@@ -390,7 +413,7 @@ async def delete_payment_method(request):
 
     await site.start()
 
-    print("🌊 Market server: 8080")
+    print("🌊 Market server started")
 
     while True:
         await asyncio.sleep(3600)
