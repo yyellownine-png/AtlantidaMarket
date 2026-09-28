@@ -1,949 +1,775 @@
 import asyncio
 import os
-import subprocess
-import re
-import urllib.request
-import urllib.parse
+from datetime import datetime
 import json
 
-from dotenv import load_dotenv
+import aiosqlite
 from aiohttp import web
+from dotenv import load_dotenv
 
 load_dotenv()
 
 TOKEN = os.getenv("BOT_TOKEN")
-
-if not TOKEN or TOKEN == "ТОКЕН_ТВОЕГО_БОТА":
+if not TOKEN:
     raise RuntimeError("BOT_TOKEN не найден в .env")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(BASE, "web")
-
-
 DB = os.path.join(BASE, "atlantida.db")
 
 
+async def db_columns(db, table):
+    cur = await db.execute(f"PRAGMA table_info({table})")
+    return [x[1] for x in await cur.fetchall()]
+
+
+async def add_column(db, table, column, definition):
+    cols = await db_columns(db, table)
+    if column not in cols:
+        await db.execute(
+            f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
+        )
+
+
 async def init_db():
-    import aiosqlite
-
     async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS seller_payment_methods (
-                seller_id INTEGER PRIMARY KEY,
-                crypto_send TEXT,
-                ton_wallet TEXT,
-                usdt_wallet TEXT,
-                card_info TEXT,
-                updated_at TEXT
-            )
-        """)
-
-        # Миграция старой БД: добавляем USDT ERC-20, если колонки ещё нет
-        async with db.execute(
-            "PRAGMA table_info(seller_payment_methods)"
-        ) as cur:
-            columns = [row[1] for row in await cur.fetchall()]
-
-        if "usdt_wallet" not in columns:
-            await db.execute(
-                "ALTER TABLE seller_payment_methods ADD COLUMN usdt_wallet TEXT"
-            )
 
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS listings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                seller_id INTEGER NOT NULL,
-                category TEXT NOT NULL,
-                name TEXT NOT NULL,
-                amount TEXT NOT NULL,
-                price TEXT NOT NULL,
-                description TEXT DEFAULT '',
-                status TEXT NOT NULL DEFAULT 'active',
-                created_at TEXT NOT NULL
-            )
+        CREATE TABLE IF NOT EXISTS users(
+            id INTEGER PRIMARY KEY,
+            username TEXT DEFAULT '',
+            first_name TEXT DEFAULT '',
+            created_at TEXT
+        )
         """)
 
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                listing_id INTEGER NOT NULL,
-                buyer_id INTEGER NOT NULL,
-                seller_id INTEGER NOT NULL,
-                status TEXT NOT NULL DEFAULT 'created',
-                created_at TEXT NOT NULL
-            )
+        CREATE TABLE IF NOT EXISTS listings(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            seller_id INTEGER NOT NULL,
+            category TEXT NOT NULL,
+            name TEXT NOT NULL,
+            amount TEXT DEFAULT '1',
+            price TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            currency TEXT DEFAULT 'TON',
+            status TEXT DEFAULT 'active',
+            created_at TEXT
+        )
+        """)
+
+        await add_column(db, "listings", "currency", "TEXT DEFAULT 'TON'")
+
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS trades(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER NOT NULL,
+            buyer_id INTEGER NOT NULL,
+            seller_id INTEGER NOT NULL,
+            amount TEXT DEFAULT '',
+            currency TEXT DEFAULT 'TON',
+            status TEXT DEFAULT 'pending',
+            tx_hash TEXT DEFAULT '',
+            created_at TEXT
+        )
+        """)
+
+        await add_column(db, "trades", "amount", "TEXT DEFAULT ''")
+        await add_column(db, "trades", "currency", "TEXT DEFAULT 'TON'")
+        await add_column(db, "trades", "tx_hash", "TEXT DEFAULT ''")
+
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS seller_payment_methods(
+            seller_id INTEGER PRIMARY KEY,
+            crypto_send TEXT DEFAULT '',
+            ton_wallet TEXT DEFAULT '',
+            usdt_wallet TEXT DEFAULT '',
+            card_info TEXT DEFAULT '',
+            updated_at TEXT
+        )
+        """)
+
+        await add_column(
+            db, "seller_payment_methods",
+            "usdt_wallet", "TEXT DEFAULT ''"
+        )
+
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS reviews(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            seller_id INTEGER NOT NULL,
+            buyer_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            text TEXT DEFAULT '',
+            created_at TEXT
+        )
+        """)
+
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS reports(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER NOT NULL,
+            reporter_id INTEGER NOT NULL,
+            reason TEXT DEFAULT '',
+            created_at TEXT
+        )
+        """)
+
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS public_chat(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            username TEXT DEFAULT '',
+            first_name TEXT DEFAULT '',
+            photo_url TEXT DEFAULT '',
+            text TEXT NOT NULL,
+            created_at TEXT
+        )
         """)
 
         await db.commit()
+
+
+async def json_body(request):
+    try:
+        return await request.json()
+    except Exception:
+        return {}
 
 
 async def index(request):
-    return web.FileResponse(
-        os.path.join(WEB, "index.html")
-    )
+    return web.FileResponse(os.path.join(WEB, "index.html"))
 
 
 async def listings(request):
-    import aiosqlite
+    category = request.query.get("category", "Все")
+    search = request.query.get("search", "").strip()
 
-    db_path = os.path.join(BASE, "atlantida.db")
+    async with aiosqlite.connect(DB) as db:
+        query = """
+        SELECT
+            l.id,l.seller_id,l.category,l.name,l.amount,
+            l.price,l.description,l.currency,l.created_at,
+            u.username,u.first_name
+        FROM listings l
+        LEFT JOIN users u ON u.id=l.seller_id
+        WHERE l.status='active'
+        """
+        args = []
 
-    category = request.query.get("category")
-    search = request.query.get("search")
+        if category and category != "Все":
+            query += " AND l.category=?"
+            args.append(category)
 
-    async with aiosqlite.connect(db_path) as db:
+        if search:
+            query += """
+            AND (
+                l.name LIKE ?
+                OR l.description LIKE ?
+                OR l.category LIKE ?
+            )
+            """
+            q = f"%{search}%"
+            args.extend([q, q, q])
 
-        if category:
-            cur = await db.execute("""
-                SELECT id,seller_id,category,name,amount,price,description
-                FROM listings
-                WHERE status='active' AND category=?
-                ORDER BY id DESC
-            """,(category,))
+        query += " ORDER BY l.id DESC LIMIT 100"
 
-        elif search:
-            q="%"+search+"%"
-            cur=await db.execute("""
-                SELECT id,seller_id,category,name,amount,price,description
-                FROM listings
-                WHERE status='active'
-                AND (name LIKE ? OR description LIKE ?)
-                ORDER BY id DESC
-            """,(q,q))
+        cur = await db.execute(query, args)
+        rows = await cur.fetchall()
 
-        else:
-            cur=await db.execute("""
-                SELECT id,seller_id,category,name,amount,price,description
-                FROM listings
-                WHERE status='active'
-                ORDER BY id DESC
-                LIMIT 100
-            """)
+    result = []
+    for r in rows:
+        result.append({
+            "id": r[0],
+            "seller_id": r[1],
+            "category": r[2],
+            "name": r[3],
+            "title": r[3],
+            "amount": r[4],
+            "price": r[5],
+            "description": r[6] or "",
+            "currency": r[7] or "TON",
+            "created_at": r[8],
+            "seller_username": r[9] or "",
+            "seller_name": r[10] or "Пользователь"
+        })
 
-        rows=await cur.fetchall()
-
-    return web.json_response([
-        {
-            "id":r[0],
-            "seller_id":r[1],
-            "category":r[2],
-            "name":r[3],
-            "amount":r[4],
-            "price":r[5],
-            "description":r[6] or ""
-        }
-        for r in rows
-    ])
+    return web.json_response({"ok": True, "listings": result})
 
 
 async def create_listing(request):
-    import aiosqlite
-    from datetime import datetime
+    data = await json_body(request)
 
-    data=await request.json()
+    seller_id = int(data.get("seller_id", 0))
+    name = str(data.get("name") or data.get("title") or "").strip()
+    category = str(data.get("category") or "Другое").strip()
+    amount = str(data.get("amount") or "1").strip()
+    price = str(data.get("price") or "").strip()
+    currency = str(data.get("currency") or "TON").upper().strip()
+    description = str(data.get("description") or "").strip()
 
-    db_path=os.path.join(BASE,"atlantida.db")
-
-    async with aiosqlite.connect(db_path) as db:
-
-        cur=await db.execute("""
-            INSERT INTO listings
-            (seller_id,category,name,amount,price,description,status,created_at)
-            VALUES(?,?,?,?,?,?,?,?)
-        """,(
-            int(data["seller_id"]),
-            data["category"],
-            data["name"],
-            data["amount"],
-            data["price"],
-            data.get("description",""),
-            "active",
-            datetime.now().isoformat()
-        ))
-
-        listing_id=cur.lastrowid
-
-        await db.commit()
-
-    return web.json_response({
-        "ok":True,
-        "id":listing_id
-    })
-
-
-
-async def telegram_notify(chat_id, message):
-    if not TOKEN or not chat_id:
-        return False
-
-    import aiohttp
-
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            url,
-            json={
-                "chat_id": int(chat_id),
-                "text": message
-            },
-            timeout=10
-        ) as response:
-            return response.status == 200
-
-
-async def create_trade(request):
-    import aiosqlite
-    from datetime import datetime
-
-    try:
-        data = await request.json()
-
-        listing_id = int(data["listing_id"])
-        buyer_id = int(data["buyer_id"])
-        amount = str(data.get("amount", ""))
-        currency = str(data.get("currency", "")).upper()
-
-        if currency not in ("TON", "USDT"):
-            return web.json_response(
-                {"ok": False, "error": "unsupported_currency"},
-                status=400
-            )
-
-        async with aiosqlite.connect(DB) as db:
-            cur = await db.execute("""
-                SELECT seller_id, price, name, status
-                FROM listings
-                WHERE id=?
-            """, (listing_id,))
-            row = await cur.fetchone()
-
-            if not row:
-                return web.json_response(
-                    {"ok": False, "error": "listing_not_found"},
-                    status=404
-                )
-
-            seller_id, listing_price, listing_name, listing_status = row
-
-            if listing_status != "active":
-                return web.json_response(
-                    {"ok": False, "error": "listing_closed"},
-                    status=400
-                )
-
-            if seller_id == buyer_id:
-                return web.json_response(
-                    {"ok": False, "error": "own_listing"},
-                    status=400
-                )
-
-            # Если цена пришла с клиента — используем цену самого объявления.
-            if not amount:
-                amount = str(listing_price)
-
-            cur = await db.execute("""
-                INSERT INTO trades
-                (listing_id, buyer_id, seller_id, amount, currency, status, created_at)
-                VALUES(?,?,?,?,?,?,?)
-            """, (
-                listing_id,
-                buyer_id,
-                seller_id,
-                amount,
-                currency,
-                "pending",
-                datetime.now().isoformat()
-            ))
-
-            trade_id = cur.lastrowid
-            await db.commit()
-
-        # Уведомление продавцу
-        try:
-            await telegram_notify(
-                seller_id,
-                f"🛒 Новая сделка #{trade_id}\n\n"
-                f"Товар: {listing_name}\n"
-                f"Сумма: {amount} {currency}\n"
-                f"Статус: ⏳ Ожидает оплаты"
-            )
-        except Exception:
-            pass
-
-        return web.json_response({
-            "ok": True,
-            "trade_id": trade_id,
-            "status": "pending"
-        })
-
-    except Exception as e:
+    if not seller_id or not name or not price:
         return web.json_response(
-            {"ok": False, "error": str(e)},
-            status=500
-        )
-
-
-async def save_payment_method(request):
-    import aiosqlite
-
-    try:
-        data = await request.json()
-        seller_id = int(data.get("seller_id", 0))
-        ton_wallet = str(data.get("ton_wallet", "")).strip()
-        usdt_wallet = str(data.get("usdt_wallet", "")).strip()
-    except Exception:
-        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
-
-    if not seller_id:
-        return web.json_response(
-            {"ok": False, "error": "invalid_seller_id"},
+            {"ok": False, "error": "Заполни название и цену"},
             status=400
         )
 
-    if not ton_wallet and not usdt_wallet:
+    if currency not in ("TON", "USDT", "STARS"):
         return web.json_response(
-            {"ok": False, "error": "no_wallet"},
-            status=400
-        )
-
-    if ton_wallet and not (
-        ton_wallet.startswith("EQ") or
-        ton_wallet.startswith("UQ") or
-        ton_wallet.startswith("kQ")
-    ):
-        return web.json_response(
-            {"ok": False, "error": "invalid_ton_wallet"},
-            status=400
-        )
-
-    if usdt_wallet and not re.fullmatch(r"0x[a-fA-F0-9]{40}", usdt_wallet):
-        return web.json_response(
-            {"ok": False, "error": "invalid_usdt_erc20_wallet"},
+            {"ok": False, "error": "Недопустимая валюта"},
             status=400
         )
 
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS seller_payment_methods (
-                seller_id INTEGER PRIMARY KEY,
-                crypto_send TEXT,
-                ton_wallet TEXT,
-                usdt_wallet TEXT,
-                card_info TEXT,
-                updated_at TEXT
-            )
-        """)
+        INSERT INTO users(id,username,first_name,created_at)
+        VALUES(?,?,?,?)
+        ON CONFLICT(id) DO NOTHING
+        """, (seller_id, "", "Пользователь", datetime.utcnow().isoformat()))
 
-        await db.execute("""
-            INSERT INTO seller_payment_methods
-                (seller_id, ton_wallet, usdt_wallet, updated_at)
-            VALUES (?, ?, ?, datetime('now'))
-            ON CONFLICT(seller_id) DO UPDATE SET
-                ton_wallet=excluded.ton_wallet,
-                usdt_wallet=excluded.usdt_wallet,
-                updated_at=excluded.updated_at
-        """, (seller_id, ton_wallet, usdt_wallet))
-
+        cur = await db.execute("""
+        INSERT INTO listings
+        (seller_id,category,name,amount,price,description,currency,status,created_at)
+        VALUES(?,?,?,?,?,?,?,?,?)
+        """, (
+            seller_id, category, name, amount, price,
+            description, currency, "active",
+            datetime.utcnow().isoformat()
+        ))
+        listing_id = cur.lastrowid
         await db.commit()
+
+    return web.json_response({"ok": True, "id": listing_id})
+
+
+async def close_listing(request):
+    data = await json_body(request)
+    listing_id = int(data.get("listing_id", 0))
+    user_id = int(data.get("user_id", 0))
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        UPDATE listings
+        SET status='closed'
+        WHERE id=? AND seller_id=? AND status='active'
+        """, (listing_id, user_id))
+        await db.commit()
+
+    if cur.rowcount == 0:
+        return web.json_response(
+            {"ok": False, "error": "Объявление не найдено"},
+            status=404
+        )
+
+    return web.json_response({"ok": True})
+
+
+async def payment_methods(request):
+    seller_id = int(request.match_info["seller_id"])
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT ton_wallet,usdt_wallet
+        FROM seller_payment_methods
+        WHERE seller_id=?
+        """, (seller_id,))
+        row = await cur.fetchone()
+
+    if not row:
+        return web.json_response({
+            "ok": True,
+            "ton_wallet": "",
+            "usdt_wallet": "",
+            "connected": False
+        })
 
     return web.json_response({
         "ok": True,
-        "seller_id": seller_id,
-        "ton_wallet": ton_wallet,
-        "usdt_wallet": usdt_wallet
+        "ton_wallet": row[0] or "",
+        "usdt_wallet": row[1] or "",
+        "connected": bool(row[0] or row[1])
     })
 
 
-async def get_payment_method(request):
-    import aiosqlite
+async def save_payment_methods(request):
+    data = await json_body(request)
 
-    try:
-        seller_id = int(request.match_info["seller_id"])
-    except Exception:
+    seller_id = int(data.get("seller_id", 0))
+    ton = str(data.get("ton_wallet") or "").strip()
+    usdt = str(data.get("usdt_wallet") or "").strip()
+
+    if not seller_id:
         return web.json_response(
-            {"ok": False, "error": "invalid_seller_id"},
-            status=400
-        )
-
-    try:
-        async with aiosqlite.connect(DB) as db:
-            cur = await db.execute(
-                "PRAGMA table_info(seller_payment_methods)"
-            )
-            columns = [row[1] for row in await cur.fetchall()]
-
-            if "usdt_wallet" not in columns:
-                await db.execute(
-                    "ALTER TABLE seller_payment_methods ADD COLUMN usdt_wallet TEXT"
-                )
-                await db.commit()
-
-            cur = await db.execute("""
-                SELECT seller_id, ton_wallet, usdt_wallet
-                FROM seller_payment_methods
-                WHERE seller_id=?
-            """, (seller_id,))
-
-            row = await cur.fetchone()
-
-        if not row:
-            return web.json_response({
-                "ok": True,
-                "connected": False,
-                "ton_wallet": "",
-                "usdt_wallet": ""
-            })
-
-        return web.json_response({
-            "ok": True,
-            "connected": bool(row[1] or row[2]),
-            "seller_id": row[0],
-            "ton_wallet": row[1] or "",
-            "usdt_wallet": row[2] or ""
-        })
-
-    except Exception as e:
-        return web.json_response({
-            "ok": False,
-            "error": type(e).__name__,
-            "message": str(e)
-        }, status=500)
-
-
-async def delete_payment_method(request):
-    import aiosqlite
-
-    try:
-        data = await request.json()
-        seller_id = int(data.get("seller_id", 0))
-    except Exception:
-        return web.json_response(
-            {"ok": False, "error": "invalid_data"},
+            {"ok": False, "error": "Неизвестный пользователь"},
             status=400
         )
 
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
-            DELETE FROM seller_payment_methods
-            WHERE seller_id=?
-        """, (seller_id,))
+        INSERT INTO seller_payment_methods
+        (seller_id,ton_wallet,usdt_wallet,updated_at)
+        VALUES(?,?,?,?)
+        ON CONFLICT(seller_id) DO UPDATE SET
+            ton_wallet=excluded.ton_wallet,
+            usdt_wallet=excluded.usdt_wallet,
+            updated_at=excluded.updated_at
+        """, (
+            seller_id, ton, usdt,
+            datetime.utcnow().isoformat()
+        ))
         await db.commit()
 
     return web.json_response({"ok": True})
 
 
+async def create_trade(request):
+    data = await json_body(request)
 
-async def get_public_chat(request):
-    import aiosqlite
-
-    try:
-        user_id = int(request.query.get("user_id", 0))
-    except Exception:
-        return web.json_response(
-            {"ok": False, "error": "invalid_user_id"},
-            status=400
-        )
-
-    if not user_id:
-        return web.json_response(
-            {"ok": False, "error": "invalid_user_id"},
-            status=400
-        )
+    listing_id = int(data.get("listing_id", 0))
+    buyer_id = int(data.get("buyer_id", 0))
 
     async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT seller_id,price,currency,name,status
+        FROM listings
+        WHERE id=?
+        """, (listing_id,))
+        listing = await cur.fetchone()
 
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS public_chat (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                username TEXT DEFAULT '',
-                first_name TEXT DEFAULT '',
-                photo_url TEXT DEFAULT '',
-                text TEXT NOT NULL,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        if not listing:
+            return web.json_response(
+                {"ok": False, "error": "Объявление не найдено"},
+                status=404
             )
-        """)
-        try:
-            await db.execute("ALTER TABLE public_chat ADD COLUMN photo_url TEXT DEFAULT ''")
-            await db.commit()
-        except Exception:
-            pass
+
+        seller_id, price, currency, name, status = listing
+
+        if seller_id == buyer_id:
+            return web.json_response(
+                {"ok": False, "error": "Нельзя купить своё объявление"},
+                status=400
+            )
+
+        if status != "active":
+            return web.json_response(
+                {"ok": False, "error": "Объявление уже закрыто"},
+                status=400
+            )
 
         cur = await db.execute("""
-            SELECT
-                id,
-                user_id,
-                username,
-                first_name,
-                photo_url,
-                text,
-                created_at
-            FROM public_chat
-            ORDER BY id DESC
-            LIMIT 100
-        """)
+        INSERT INTO trades
+        (listing_id,buyer_id,seller_id,amount,currency,status,created_at)
+        VALUES(?,?,?,?,?,?,?)
+        """, (
+            listing_id,
+            buyer_id,
+            seller_id,
+            str(price),
+            str(currency or "TON"),
+            "pending",
+            datetime.utcnow().isoformat()
+        ))
+
+        trade_id = cur.lastrowid
+        await db.commit()
+
+    return web.json_response({
+        "ok": True,
+        "trade_id": trade_id,
+        "status": "pending",
+        "message": "Сделка создана. Ожидается оплата."
+    })
+
+
+async def get_trades(request):
+    user_id = int(request.query.get("user_id", 0))
+
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT
+            id,listing_id,buyer_id,seller_id,
+            amount,currency,status,tx_hash,created_at
+        FROM trades
+        WHERE buyer_id=? OR seller_id=?
+        ORDER BY id DESC
+        """, (user_id, user_id))
 
         rows = await cur.fetchall()
 
-    messages = []
-
-    for r in reversed(rows):
-        messages.append({
+    result = []
+    for r in rows:
+        result.append({
             "id": r[0],
-            "user_id": r[1],
-            "username": r[2] or "",
-            "first_name": r[3] or "Игрок",
-            "photo_url": r[4] or "",
-            "text": r[5],
-            "created_at": r[6]
+            "listing_id": r[1],
+            "buyer_id": r[2],
+            "seller_id": r[3],
+            "amount": r[4],
+            "currency": r[5],
+            "status": r[6],
+            "tx_hash": r[7] or "",
+            "created_at": r[8]
         })
 
     return web.json_response({
         "ok": True,
-        "messages": messages
+        "trades": result
     })
 
 
-async def send_public_chat(request):
-    import aiosqlite
-    from datetime import datetime
+async def update_trade_status(request):
+    data = await json_body(request)
 
-    try:
-        data = await request.json()
+    trade_id = int(data.get("trade_id", 0))
+    user_id = int(data.get("user_id", 0))
+    new_status = str(data.get("status") or "")
 
-        user_id = int(data.get("user_id", 0))
-        username = str(data.get("username", ""))[:64]
-        first_name = str(
-            data.get("first_name", "Игрок")
-        )[:64]
+    allowed = {
+        "delivered",
+        "completed",
+        "cancelled"
+    }
 
-        photo_url = str(
-            data.get("photo_url", "")
-        )[:1000]
-
-        text = str(
-            data.get("text", "")
-        ).strip()
-
-    except Exception:
+    if new_status not in allowed:
         return web.json_response(
-            {"ok": False, "error": "invalid_data"},
-            status=400
-        )
-
-    if not user_id or not text:
-        return web.json_response(
-            {"ok": False, "error": "invalid_data"},
-            status=400
-        )
-
-    if len(text) > 500:
-        return web.json_response(
-            {"ok": False, "error": "message_too_long"},
+            {
+                "ok": False,
+                "error": "Этот статус нельзя установить вручную"
+            },
             status=400
         )
 
     async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT buyer_id,seller_id,status
+        FROM trades
+        WHERE id=?
+        """, (trade_id,))
+        row = await cur.fetchone()
+
+        if not row:
+            return web.json_response(
+                {"ok": False, "error": "Сделка не найдена"},
+                status=404
+            )
+
+        buyer_id, seller_id, status = row
+
+        if new_status == "delivered":
+            if user_id != seller_id or status != "paid":
+                return web.json_response(
+                    {"ok": False, "error": "Нельзя передать товар сейчас"},
+                    status=403
+                )
+
+        elif new_status == "completed":
+            if user_id != buyer_id or status != "delivered":
+                return web.json_response(
+                    {"ok": False, "error": "Нельзя завершить сделку сейчас"},
+                    status=403
+                )
+
+        elif new_status == "cancelled":
+            if user_id not in (buyer_id, seller_id):
+                return web.json_response(
+                    {"ok": False, "error": "Нет доступа"},
+                    status=403
+                )
 
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS public_chat (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                username TEXT DEFAULT '',
-                first_name TEXT DEFAULT '',
-                photo_url TEXT DEFAULT '',
-                text TEXT NOT NULL,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        try:
-            await db.execute("ALTER TABLE public_chat ADD COLUMN photo_url TEXT DEFAULT ''")
-            await db.commit()
-        except Exception:
-            pass
+        UPDATE trades SET status=?
+        WHERE id=?
+        """, (new_status, trade_id))
 
-        now = datetime.now().isoformat(timespec="seconds")
+        await db.commit()
 
+    return web.json_response({"ok": True})
+
+
+async def submit_tx(request):
+    """
+    Безопасный режим:
+    транзакция записывается как заявка на проверку.
+    Она НЕ считается подтверждённой оплатой автоматически.
+    """
+    data = await json_body(request)
+
+    trade_id = int(data.get("trade_id", 0))
+    user_id = int(data.get("user_id", 0))
+    tx_hash = str(data.get("tx_hash") or "").strip()
+
+    if not tx_hash:
+        return web.json_response(
+            {"ok": False, "error": "Укажи хэш транзакции"},
+            status=400
+        )
+
+    async with aiosqlite.connect(DB) as db:
         cur = await db.execute("""
-            INSERT INTO public_chat
-            (
-                user_id,
-                username,
-                first_name,
-                photo_url,
-                text,
-                created_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            user_id,
-            username,
-            first_name,
-            photo_url,
-            text,
-            now
-        ))
+        SELECT buyer_id,status FROM trades WHERE id=?
+        """, (trade_id,))
+        row = await cur.fetchone()
 
-        message_id = cur.lastrowid
+        if not row:
+            return web.json_response(
+                {"ok": False, "error": "Сделка не найдена"},
+                status=404
+            )
+
+        buyer_id, status = row
+
+        if buyer_id != user_id:
+            return web.json_response(
+                {"ok": False, "error": "Нет доступа"},
+                status=403
+            )
+
+        if status != "pending":
+            return web.json_response(
+                {"ok": False, "error": "Эта сделка уже обработана"},
+                status=400
+            )
+
+        await db.execute("""
+        UPDATE trades SET tx_hash=?
+        WHERE id=?
+        """, (tx_hash, trade_id))
 
         await db.commit()
 
     return web.json_response({
         "ok": True,
-        "message": {
-            "id": message_id,
-            "user_id": user_id,
-            "username": username,
-            "first_name": first_name,
-            "photo_url": photo_url,
-            "text": text,
-            "created_at": now
-        }
+        "status": "pending",
+        "message": "Транзакция отправлена на проверку."
     })
 
 
-
 async def get_reviews(request):
-    import aiosqlite
-
-    try:
-        seller_id = int(request.query.get("seller_id", 0))
-    except Exception:
-        return web.json_response({"ok": False, "error": "invalid_seller_id"}, status=400)
+    seller_id = int(request.query.get("seller_id", 0))
 
     async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS seller_reviews (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                seller_id INTEGER NOT NULL,
-                buyer_id INTEGER NOT NULL,
-                rating INTEGER NOT NULL,
-                text TEXT DEFAULT '',
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        await db.commit()
-
         cur = await db.execute("""
-            SELECT id, buyer_id, rating, text, created_at
-            FROM seller_reviews
-            WHERE seller_id=?
-            ORDER BY id DESC
+        SELECT r.id,r.buyer_id,r.rating,r.text,r.created_at,
+               u.username,u.first_name
+        FROM reviews r
+        LEFT JOIN users u ON u.id=r.buyer_id
+        WHERE r.seller_id=?
+        ORDER BY r.id DESC
+        LIMIT 50
         """, (seller_id,))
-
         rows = await cur.fetchall()
 
-    reviews = [
-        {
+    reviews = []
+    ratings = []
+
+    for r in rows:
+        ratings.append(r[2])
+        reviews.append({
             "id": r[0],
             "buyer_id": r[1],
             "rating": r[2],
             "text": r[3] or "",
-            "created_at": r[4]
-        }
-        for r in rows
-    ]
-
-    average = round(
-        sum(x["rating"] for x in reviews) / len(reviews), 1
-    ) if reviews else 0
+            "created_at": r[4],
+            "username": r[5] or "",
+            "first_name": r[6] or "Пользователь"
+        })
 
     return web.json_response({
         "ok": True,
-        "seller_id": seller_id,
-        "average": average,
-        "count": len(reviews),
+        "average": round(sum(ratings) / len(ratings), 1)
+        if ratings else 0,
+        "count": len(ratings),
         "reviews": reviews
     })
 
 
 async def create_review(request):
-    import aiosqlite
+    data = await json_body(request)
 
-    try:
-        data = await request.json()
-        seller_id = int(data.get("seller_id", 0))
-        buyer_id = int(data.get("buyer_id", 0))
-        rating = int(data.get("rating", 0))
-        text = str(data.get("text", "")).strip()
-    except Exception:
-        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
-
-    if not seller_id or not buyer_id:
-        return web.json_response({"ok": False, "error": "invalid_user"}, status=400)
+    seller_id = int(data.get("seller_id", 0))
+    buyer_id = int(data.get("buyer_id", 0))
+    rating = int(data.get("rating", 0))
+    text = str(data.get("text") or "").strip()
 
     if seller_id == buyer_id:
-        return web.json_response({"ok": False, "error": "self_review"}, status=400)
+        return web.json_response(
+            {"ok": False, "error": "Нельзя оценить себя"},
+            status=400
+        )
 
     if rating < 1 or rating > 5:
-        return web.json_response({"ok": False, "error": "invalid_rating"}, status=400)
+        return web.json_response(
+            {"ok": False, "error": "Оценка от 1 до 5"},
+            status=400
+        )
 
     async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS seller_reviews (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                seller_id INTEGER NOT NULL,
-                buyer_id INTEGER NOT NULL,
-                rating INTEGER NOT NULL,
-                text TEXT DEFAULT '',
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
         cur = await db.execute("""
-            SELECT id FROM seller_reviews
-            WHERE seller_id=? AND buyer_id=?
+        SELECT id FROM reviews
+        WHERE seller_id=? AND buyer_id=?
         """, (seller_id, buyer_id))
 
         if await cur.fetchone():
-            return web.json_response({
-                "ok": False,
-                "error": "already_reviewed"
-            }, status=409)
-
-        await db.execute("""
-            INSERT INTO seller_reviews
-                (seller_id, buyer_id, rating, text)
-            VALUES (?, ?, ?, ?)
-        """, (seller_id, buyer_id, rating, text))
-
-        await db.commit()
-
-    return web.json_response({
-        "ok": True,
-        "seller_id": seller_id,
-        "rating": rating
-    })
-
-
-
-async def get_trades(request):
-    import aiosqlite
-
-    try:
-        user_id = int(request.query.get("user_id", 0))
-    except Exception:
-        return web.json_response({"ok": False, "error": "invalid_user_id"}, status=400)
-
-    if not user_id:
-        return web.json_response({"ok": False, "error": "invalid_user_id"}, status=400)
-
-    async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                listing_id INTEGER,
-                buyer_id INTEGER,
-                seller_id INTEGER,
-                amount TEXT,
-                currency TEXT,
-                status TEXT DEFAULT 'pending',
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            return web.json_response(
+                {"ok": False, "error": "Ты уже оставлял отзыв"},
+                status=400
             )
-        """)
+
+        await db.execute("""
+        INSERT INTO reviews
+        (seller_id,buyer_id,rating,text,created_at)
+        VALUES(?,?,?,?,?)
+        """, (
+            seller_id,buyer_id,rating,text,
+            datetime.utcnow().isoformat()
+        ))
         await db.commit()
 
-        cur = await db.execute("""
-            SELECT id, listing_id, buyer_id, seller_id,
-                   amount, currency, status, created_at
-            FROM trades
-            WHERE buyer_id=? OR seller_id=?
-            ORDER BY id DESC
-        """, (user_id, user_id))
+    return web.json_response({"ok": True})
 
+
+async def chat_get(request):
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        SELECT id,user_id,username,first_name,photo_url,text,created_at
+        FROM public_chat
+        ORDER BY id DESC
+        LIMIT 100
+        """)
         rows = await cur.fetchall()
 
+    rows.reverse()
+
     return web.json_response({
         "ok": True,
-        "trades": [
+        "messages": [
             {
                 "id": r[0],
-                "listing_id": r[1],
-                "buyer_id": r[2],
-                "seller_id": r[3],
-                "amount": r[4],
-                "currency": r[5],
-                "status": r[6],
-                "created_at": r[7]
+                "user_id": r[1],
+                "username": r[2] or "",
+                "first_name": r[3] or "Пользователь",
+                "photo_url": r[4] or "",
+                "text": r[5],
+                "created_at": r[6]
             }
             for r in rows
         ]
     })
 
 
-async def update_trade_status(request):
-    import aiosqlite
+async def chat_post(request):
+    data = await json_body(request)
 
-    try:
-        data = await request.json()
+    user_id = int(data.get("user_id", 0))
+    username = str(data.get("username") or "")
+    first_name = str(data.get("first_name") or "Пользователь")
+    photo_url = str(data.get("photo_url") or "")
+    text = str(data.get("text") or "").strip()
 
-        trade_id = int(data.get("trade_id", 0))
-        user_id = int(data.get("user_id", 0))
-        new_status = str(data.get("status", "")).strip()
-
-        allowed = {
-            "pending",
-            "paid",
-            "delivered",
-            "completed",
-            "cancelled"
-        }
-
-        if not trade_id or not user_id or new_status not in allowed:
-            return web.json_response(
-                {"ok": False, "error": "invalid_trade"},
-                status=400
-            )
-
-        async with aiosqlite.connect(DB) as db:
-            cur = await db.execute("""
-                SELECT buyer_id, seller_id, amount, currency
-                FROM trades
-                WHERE id=?
-            """, (trade_id,))
-            row = await cur.fetchone()
-
-            if not row:
-                return web.json_response(
-                    {"ok": False, "error": "trade_not_found"},
-                    status=404
-                )
-
-            buyer_id, seller_id, amount, currency = row
-
-            # Кто имеет право менять конкретный статус
-            if new_status == "paid" and user_id != buyer_id:
-                return web.json_response(
-                    {"ok": False, "error": "buyer_only"},
-                    status=403
-                )
-
-            if new_status == "delivered" and user_id != seller_id:
-                return web.json_response(
-                    {"ok": False, "error": "seller_only"},
-                    status=403
-                )
-
-            if new_status == "completed" and user_id != buyer_id:
-                return web.json_response(
-                    {"ok": False, "error": "buyer_only"},
-                    status=403
-                )
-
-            if new_status == "cancelled" and user_id not in (buyer_id, seller_id):
-                return web.json_response(
-                    {"ok": False, "error": "access_denied"},
-                    status=403
-                )
-
-            await db.execute("""
-                UPDATE trades
-                SET status=?
-                WHERE id=?
-            """, (new_status, trade_id))
-
-            await db.commit()
-
-        messages = {
-            "paid":
-                f"💳 Покупатель отметил оплату по сделке #{trade_id}.\n"
-                f"Сумма: {amount} {currency}\n\n"
-                f"Проверь поступление средств и передай товар.",
-
-            "delivered":
-                f"📦 Продавец передал товар по сделке #{trade_id}.\n\n"
-                f"Проверь получение и подтверди сделку.",
-
-            "completed":
-                f"✅ Сделка #{trade_id} завершена.\n\n"
-                f"Спасибо за использование Atlantida Market.",
-
-            "cancelled":
-                f"❌ Сделка #{trade_id} отменена."
-        }
-
-        # Уведомляем вторую сторону
-        if new_status == "paid":
-            await telegram_notify(seller_id, messages["paid"])
-
-        elif new_status == "delivered":
-            await telegram_notify(buyer_id, messages["delivered"])
-
-        elif new_status == "completed":
-            await telegram_notify(seller_id, messages["completed"])
-
-        elif new_status == "cancelled":
-            other_id = seller_id if user_id == buyer_id else buyer_id
-            await telegram_notify(other_id, messages["cancelled"])
-
-        return web.json_response({
-            "ok": True,
-            "trade_id": trade_id,
-            "status": new_status
-        })
-
-    except Exception as e:
+    if not user_id or not text:
         return web.json_response(
-            {"ok": False, "error": str(e)},
-            status=500
+            {"ok": False, "error": "Пустое сообщение"},
+            status=400
         )
 
+    if len(text) > 500:
+        return web.json_response(
+            {"ok": False, "error": "Максимум 500 символов"},
+            status=400
+        )
 
-async def start_server():
-    app = web.Application()
+    async with aiosqlite.connect(DB) as db:
+        cur = await db.execute("""
+        INSERT INTO public_chat
+        (user_id,username,first_name,photo_url,text,created_at)
+        VALUES(?,?,?,?,?,?)
+        """, (
+            user_id,username,first_name,photo_url,text,
+            datetime.utcnow().isoformat()
+        ))
+        message_id = cur.lastrowid
+        await db.commit()
+
+    return web.json_response({
+        "ok": True,
+        "id": message_id
+    })
+
+
+@web.middleware
+async def cors_middleware(request, handler):
+    if request.method == "OPTIONS":
+        return web.Response(
+            status=204,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+                "Access-Control-Max-Age": "86400",
+            },
+        )
+
+    try:
+        response = await handler(request)
+    except web.HTTPException as e:
+        response = e
+
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PATCH,OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+
+    return response
+
+
+async def main():
+    await init_db()
+
+    app = web.Application(middlewares=[cors_middleware])
 
     app.router.add_get("/", index)
+
     app.router.add_get("/api/listings", listings)
     app.router.add_post("/api/listings", create_listing)
+    app.router.add_patch("/api/listings/close", close_listing)
+
+    app.router.add_get(
+        "/api/payment-methods/{seller_id}",
+        payment_methods
+    )
+    app.router.add_post(
+        "/api/payment-methods",
+        save_payment_methods
+    )
 
     app.router.add_post("/api/trades", create_trade)
-
-    app.router.add_get("/api/chat", get_public_chat)
-    app.router.add_post("/api/chat", send_public_chat)
+    app.router.add_get("/api/trades", get_trades)
+    app.router.add_patch("/api/trades/status", update_trade_status)
+    app.router.add_post("/api/trades/tx", submit_tx)
 
     app.router.add_get("/api/reviews", get_reviews)
     app.router.add_post("/api/reviews", create_review)
 
-    app.router.add_get("/api/trades", get_trades)
-    app.router.add_patch("/api/trades/status", update_trade_status)
+    app.router.add_get("/api/chat", chat_get)
+    app.router.add_post("/api/chat", chat_post)
 
-    app.router.add_post(
-        "/api/payment-methods",
-        save_payment_method
-    )
-
-    app.router.add_get(
-        "/api/payment-methods/{seller_id}",
-        get_payment_method
-    )
-
-    app.router.add_delete(
-        "/api/payment-methods",
-        delete_payment_method
-    )
+    app.router.add_static("/", WEB, show_index=True)
 
     runner = web.AppRunner(app)
     await runner.setup()
 
-    site = web.TCPSite(
-        runner,
-        "0.0.0.0",
-        int(os.getenv("PORT", "8080"))
-    )
+    port = int(os.getenv("PORT", "8080"))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+
+    print("===================================")
+    print("🌊 ATLANTIDA MARKET")
+    print("🌐 SERVER STARTED")
+    print(f"PORT: {port}")
+    print("===================================")
 
     await site.start()
-
-    print("Atlantida Market server started")
 
     while True:
         await asyncio.sleep(3600)
 
 
-async def main():
-    await init_db()
-    await start_server()
-
-
-if __name__=="__main__":
+if __name__ == "__main__":
     asyncio.run(main())
