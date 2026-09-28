@@ -828,7 +828,8 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 document.addEventListener("click", function(e){
   const btn = e.target.closest("button");
   if(btn){
-    console.log("ATLANTIDA BUTTON CLICK:", btn.innerText);
+    const text = (btn.innerText || "Кнопка").trim().replace(/\\s+/g, " ");
+    alert("Нажата кнопка: " + text);
   }
 });
 </script>
