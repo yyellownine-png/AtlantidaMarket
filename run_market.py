@@ -277,7 +277,7 @@ async def start_server():
 
 
 async def main():
-
+    await init_db()
     await start_server()
 
 
