@@ -433,6 +433,155 @@ async def delete_payment_method(request):
     return web.json_response({"ok": True})
 
 
+
+async def get_public_chat(request):
+    import aiosqlite
+
+    try:
+        user_id = int(request.query.get("user_id", 0))
+    except Exception:
+        return web.json_response(
+            {"ok": False, "error": "invalid_user_id"},
+            status=400
+        )
+
+    if not user_id:
+        return web.json_response(
+            {"ok": False, "error": "invalid_user_id"},
+            status=400
+        )
+
+    async with aiosqlite.connect(DB) as db:
+
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS public_chat (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                username TEXT DEFAULT '',
+                first_name TEXT DEFAULT '',
+                text TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cur = await db.execute("""
+            SELECT
+                id,
+                user_id,
+                username,
+                first_name,
+                text,
+                created_at
+            FROM public_chat
+            ORDER BY id DESC
+            LIMIT 100
+        """)
+
+        rows = await cur.fetchall()
+
+    messages = []
+
+    for r in reversed(rows):
+        messages.append({
+            "id": r[0],
+            "user_id": r[1],
+            "username": r[2] or "",
+            "first_name": r[3] or "Игрок",
+            "text": r[4],
+            "created_at": r[5]
+        })
+
+    return web.json_response({
+        "ok": True,
+        "messages": messages
+    })
+
+
+async def send_public_chat(request):
+    import aiosqlite
+    from datetime import datetime
+
+    try:
+        data = await request.json()
+
+        user_id = int(data.get("user_id", 0))
+        username = str(data.get("username", ""))[:64]
+        first_name = str(
+            data.get("first_name", "Игрок")
+        )[:64]
+
+        text = str(
+            data.get("text", "")
+        ).strip()
+
+    except Exception:
+        return web.json_response(
+            {"ok": False, "error": "invalid_data"},
+            status=400
+        )
+
+    if not user_id or not text:
+        return web.json_response(
+            {"ok": False, "error": "invalid_data"},
+            status=400
+        )
+
+    if len(text) > 500:
+        return web.json_response(
+            {"ok": False, "error": "message_too_long"},
+            status=400
+        )
+
+    async with aiosqlite.connect(DB) as db:
+
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS public_chat (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                username TEXT DEFAULT '',
+                first_name TEXT DEFAULT '',
+                text TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        now = datetime.now().isoformat(timespec="seconds")
+
+        cur = await db.execute("""
+            INSERT INTO public_chat
+            (
+                user_id,
+                username,
+                first_name,
+                text,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            username,
+            first_name,
+            text,
+            now
+        ))
+
+        message_id = cur.lastrowid
+
+        await db.commit()
+
+    return web.json_response({
+        "ok": True,
+        "message": {
+            "id": message_id,
+            "user_id": user_id,
+            "username": username,
+            "first_name": first_name,
+            "text": text,
+            "created_at": now
+        }
+    })
+
+
 async def start_server():
 
     app = web.Application()
@@ -441,6 +590,17 @@ async def start_server():
     app.router.add_get("/api/listings", listings)
     app.router.add_post("/api/listings", create_listing)
     app.router.add_post("/api/trades", create_trade)
+
+    app.router.add_get(
+        "/api/chat",
+        get_public_chat
+    )
+
+    app.router.add_post(
+        "/api/chat",
+        send_public_chat
+    )
+
 app.router.add_get("/api/reviews", get_reviews)
 app.router.add_post("/api/reviews", create_review)
 
