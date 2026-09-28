@@ -602,6 +602,140 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
   font-weight:800;
 }
 
+
+/* ===== MARKETPLACE UPGRADE ===== */
+
+.seller-profile{
+  margin:14px 0;
+  padding:18px;
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(65,210,255,.14),transparent 42%),
+    linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.025));
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.seller-profile-head{
+  display:flex;
+  align-items:center;
+  gap:13px;
+}
+
+.seller-avatar{
+  width:52px;
+  height:52px;
+  border-radius:17px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:23px;
+  font-weight:900;
+  background:linear-gradient(135deg,#13c8f5,#6758ff);
+  box-shadow:0 10px 28px rgba(45,150,255,.22);
+}
+
+.seller-name{
+  color:#fff;
+  font-size:16px;
+  font-weight:900;
+}
+
+.seller-username{
+  margin-top:3px;
+  color:#74819b;
+  font-size:12px;
+}
+
+.seller-stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:14px;
+}
+
+.seller-stat{
+  padding:11px 8px;
+  text-align:center;
+  border-radius:15px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.055);
+}
+
+.seller-stat b{
+  display:block;
+  color:#fff;
+  font-size:15px;
+}
+
+.seller-stat span{
+  display:block;
+  margin-top:3px;
+  color:#6f7b95;
+  font-size:10px;
+}
+
+.market-filters{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding:4px 0 10px;
+  scrollbar-width:none;
+}
+
+.market-filters::-webkit-scrollbar{
+  display:none;
+}
+
+.market-filter{
+  flex:0 0 auto;
+  padding:9px 13px;
+  border-radius:13px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.035);
+  color:#9ca8bf;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.market-filter.active{
+  color:#fff;
+  border-color:rgba(65,205,255,.3);
+  background:rgba(35,190,255,.1);
+}
+
+.product-seller-mini{
+  margin-top:7px;
+  color:#77839d;
+  font-size:11px;
+}
+
+.product-rating-mini{
+  margin-top:5px;
+  color:#ffd45c;
+  font-size:11px;
+}
+
+.seller-link{
+  display:block;
+  margin-top:8px;
+  padding:11px 13px;
+  border-radius:14px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.055);
+  color:#8ee9ff;
+  text-align:center;
+  font-size:12px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+@media(max-width:430px){
+  .seller-stats{
+    grid-template-columns:1fr 1fr 1fr;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -636,7 +770,15 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 
 <section class="section">
   <div id="homeGrid" class="grid"></div>
-  <div id="catalogGrid" class="grid"></div>
+
+<div id="marketFilters" class="market-filters">
+  <button class="market-filter active" onclick="setMarketFilter('all',this)">Все</button>
+  <button class="market-filter" onclick="setMarketFilter('TON',this)">TON</button>
+  <button class="market-filter" onclick="setMarketFilter('USDT',this)">USDT</button>
+  <button class="market-filter" onclick="setMarketFilter('STARS',this)">Stars</button>
+</div>
+
+<div id="catalogGrid" class="grid"></div>
   <div id="favGrid" class="grid"></div>
 </section>
 
@@ -843,15 +985,41 @@ async function loadListings(){
 }
 
 
+
+let marketCurrencyFilter="all";
+
+function setMarketFilter(currency,button){
+
+  marketCurrencyFilter=String(currency||"all").toUpperCase();
+
+  document.querySelectorAll(".market-filter")
+    .forEach(x=>x.classList.remove("active"));
+
+  if(button){
+    button.classList.add("active");
+  }
+
+  render();
+}
+
 function render(){
+  const sourceListings =
+    marketCurrencyFilter==="all"
+      ? listings
+      : sourceListings.filter(x=>
+          String(x.currency||"").toUpperCase()===
+          marketCurrencyFilter
+        );
+
+
 
   const catalog=document.getElementById("catalogGrid");
   const home=document.getElementById("homeGrid");
 
   document.getElementById("count").textContent =
-    listings.length + " товаров";
+    sourceListings.length + " товаров";
 
-  if(!listings.length){
+  if(!sourceListings.length){
 
     catalog.innerHTML=
       '<div class="empty">📦<br><br>Товаров пока нет</div>';
@@ -863,7 +1031,7 @@ function render(){
   }
 
 
-  const html=listings.map(card).join("");
+  const html=sourceListings.map(card).join("");
 
   catalog.innerHTML=html;
   home.innerHTML=listings.slice(0,6).map(card).join("");
@@ -948,6 +1116,90 @@ function renderFavorites(){
 }
 
 
+
+async function openSellerProfile(sellerId){
+
+  const id=Number(sellerId)||0;
+
+  if(!id){
+    toast("Продавец не найден");
+    return;
+  }
+
+  const modal=document.getElementById("modal");
+  const content=document.getElementById("modalContent");
+
+  content.innerHTML=`
+    <h2>👤 Профиль продавца</h2>
+
+    <div class="seller-profile">
+      <div class="seller-profile-head">
+
+        <div class="seller-avatar">
+          👤
+        </div>
+
+        <div>
+          <div class="seller-name">
+            Загрузка...
+          </div>
+
+          <div class="seller-username">
+            ID: ${id}
+          </div>
+        </div>
+
+      </div>
+
+      <div class="seller-stats">
+        <div class="seller-stat">
+          <b id="sellerRating">—</b>
+          <span>Рейтинг</span>
+        </div>
+
+        <div class="seller-stat">
+          <b id="sellerReviews">—</b>
+          <span>Отзывы</span>
+        </div>
+
+        <div class="seller-stat">
+          <b id="sellerSales">—</b>
+          <span>Продажи</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="sellerReviewsProfile">
+      <div class="info">
+        Загрузка отзывов...
+      </div>
+    </div>
+  `;
+
+  modal.classList.add("show");
+
+  const reviews=await loadSellerReviews(id);
+
+  const rating=document.getElementById("sellerRating");
+  const count=document.getElementById("sellerReviews");
+  const box=document.getElementById("sellerReviewsProfile");
+
+  if(rating){
+    rating.textContent=
+      reviews.count
+        ? Number(reviews.average).toFixed(1)
+        : "—";
+  }
+
+  if(count){
+    count.textContent=Number(reviews.count||0);
+  }
+
+  if(box){
+    box.innerHTML=renderReviews(reviews);
+  }
+}
+
 async function openProduct(id){
 
   const x=listings.find(
@@ -993,6 +1245,13 @@ async function openProduct(id){
         ? " @" + esc(x.seller_username)
         : ""}
     </div>
+
+    <button
+      class="seller-link"
+      onclick="openSellerProfile(${Number(x.seller_id)})"
+    >
+      👤 Открыть профиль продавца
+    </button>
 
     <div id="sellerReviewsBox">
       <div class="reviews-summary">
