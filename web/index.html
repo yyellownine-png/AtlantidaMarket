@@ -1274,12 +1274,6 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 
 
 <script>
-document.addEventListener("click", function(e){
-  const btn = e.target.closest("button");
-  if(btn){
-    console.log("ATLANTIDA BUTTON CLICK:", btn.innerText);
-  }
-});
 </script>
 <script>
 
@@ -1318,13 +1312,6 @@ function user(){
   if(u?.id){
     return u;
   }
-
-  console.log("ATLANTIDA TELEGRAM DEBUG:", {
-    tg_exists: !!tg,
-    initData: tg?.initData || "",
-    initDataUnsafe: tg?.initDataUnsafe || {},
-    user: u || null
-  });
 
   return {
     id: 0,
@@ -1676,8 +1663,6 @@ function toggleFavorite(id){
     toast("❤️ Добавлено в избранное");
   }
 
-  console.log("ATLANTIDA FAVORITES:", favorites);
-  console.log("ATLANTIDA STORAGE:", localStorage.getItem("atlantida_favorites"));
 
   localStorage.setItem(
     "atlantida_favorites",
@@ -2571,13 +2556,7 @@ async function createListing(){
   const description=(descEl?.value || "").trim();
 
   if(!title || !price){
-    alert(
-      "DEBUG\\n" +
-      "Название: [" + title + "]\\n" +
-      "Цена: [" + price + "]\\n" +
-      "Элемент названия: " + !!titleEl + "\\n" +
-      "Элемент цены: " + !!priceEl
-    );
+    toast(!title ? "Укажи название товара" : "Укажи цену товара");
     return;
   }
 
@@ -2727,7 +2706,7 @@ function getChatUser(){
   const u=tg?.initDataUnsafe?.user;
 
   return {
-    id:u?.id || 123,
+    id:u?.id || 0,
     username:u?.username || "",
     first_name:u?.first_name || "Пользователь",
     photo_url:u?.photo_url || ""
