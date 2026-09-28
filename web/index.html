@@ -2542,22 +2542,28 @@ async function createListing(){
 
   const u=user();
 
-  const title=document.getElementById("sellTitle").value.trim();
-  const category=document.getElementById("sellCategory").value;
-  const amount=document.getElementById("sellAmount").value.trim() || "1";
-  const price=document.getElementById("sellPrice").value.trim();
-  const currency=document.getElementById("sellCurrency").value;
-  const description=document.getElementById("sellDesc").value.trim();
+  const titleEl=document.getElementById("sellTitle");
+  const categoryEl=document.getElementById("sellCategory");
+  const amountEl=document.getElementById("sellAmount");
+  const priceEl=document.getElementById("sellPrice");
+  const currencyEl=document.getElementById("sellCurrency");
+  const descEl=document.getElementById("sellDesc");
+
+  const title=(titleEl?.value || "").trim();
+  const category=categoryEl?.value || "other";
+  const amount=(amountEl?.value || "1").trim() || "1";
+  const price=(priceEl?.value || "").trim();
+  const currency=currencyEl?.value || "TON";
+  const description=(descEl?.value || "").trim();
 
   if(!title || !price){
     alert(
       "DEBUG\\n" +
       "Название: [" + title + "]\\n" +
       "Цена: [" + price + "]\\n" +
-      "sellTitle существует: " + !!document.getElementById("sellTitle") + "\\n" +
-      "sellPrice существует: " + !!document.getElementById("sellPrice")
+      "Элемент названия: " + !!titleEl + "\\n" +
+      "Элемент цены: " + !!priceEl
     );
-    toast("Заполни название и цену");
     return;
   }
 
