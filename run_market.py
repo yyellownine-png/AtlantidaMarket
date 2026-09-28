@@ -425,6 +425,123 @@ async def start_server():
     app.router.add_get("/api/listings", listings)
     app.router.add_post("/api/listings", create_listing)
     app.router.add_post("/api/trades", create_trade)
+app.router.add_get("/api/reviews", get_reviews)
+app.router.add_post("/api/reviews", create_review)
+
+
+
+async def get_reviews(request):
+    import aiosqlite
+
+    try:
+        seller_id = int(request.query.get("seller_id", 0))
+    except Exception:
+        return web.json_response({"ok": False, "error": "invalid_seller_id"}, status=400)
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS seller_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seller_id INTEGER NOT NULL,
+                buyer_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL,
+                text TEXT DEFAULT '',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.commit()
+
+        cur = await db.execute("""
+            SELECT id, buyer_id, rating, text, created_at
+            FROM seller_reviews
+            WHERE seller_id=?
+            ORDER BY id DESC
+        """, (seller_id,))
+
+        rows = await cur.fetchall()
+
+    reviews = [
+        {
+            "id": r[0],
+            "buyer_id": r[1],
+            "rating": r[2],
+            "text": r[3] or "",
+            "created_at": r[4]
+        }
+        for r in rows
+    ]
+
+    average = round(
+        sum(x["rating"] for x in reviews) / len(reviews), 1
+    ) if reviews else 0
+
+    return web.json_response({
+        "ok": True,
+        "seller_id": seller_id,
+        "average": average,
+        "count": len(reviews),
+        "reviews": reviews
+    })
+
+
+async def create_review(request):
+    import aiosqlite
+
+    try:
+        data = await request.json()
+        seller_id = int(data.get("seller_id", 0))
+        buyer_id = int(data.get("buyer_id", 0))
+        rating = int(data.get("rating", 0))
+        text = str(data.get("text", "")).strip()
+    except Exception:
+        return web.json_response({"ok": False, "error": "invalid_data"}, status=400)
+
+    if not seller_id or not buyer_id:
+        return web.json_response({"ok": False, "error": "invalid_user"}, status=400)
+
+    if seller_id == buyer_id:
+        return web.json_response({"ok": False, "error": "self_review"}, status=400)
+
+    if rating < 1 or rating > 5:
+        return web.json_response({"ok": False, "error": "invalid_rating"}, status=400)
+
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS seller_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seller_id INTEGER NOT NULL,
+                buyer_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL,
+                text TEXT DEFAULT '',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        cur = await db.execute("""
+            SELECT id FROM seller_reviews
+            WHERE seller_id=? AND buyer_id=?
+        """, (seller_id, buyer_id))
+
+        if await cur.fetchone():
+            return web.json_response({
+                "ok": False,
+                "error": "already_reviewed"
+            }, status=409)
+
+        await db.execute("""
+            INSERT INTO seller_reviews
+                (seller_id, buyer_id, rating, text)
+            VALUES (?, ?, ?, ?)
+        """, (seller_id, buyer_id, rating, text))
+
+        await db.commit()
+
+    return web.json_response({
+        "ok": True,
+        "seller_id": seller_id,
+        "rating": rating
+    })
+
 app.router.add_get("/api/trades", get_trades)
 app.router.add_patch("/api/trades/status", update_trade_status)
 
