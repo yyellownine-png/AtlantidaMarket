@@ -2300,8 +2300,15 @@ function tradeActions(t,type,buyer){
     }
 
     return `
+      <button
+        class="primary"
+        onclick="changeTradeStatus(${id},'paid')"
+      >
+        💳 Подтвердить оплату
+      </button>
+
       <div class="info">
-        ⏳ Ожидается оплата покупателя.
+        ⏳ После проверки транзакции подтверди оплату.
       </div>
     `;
   }
