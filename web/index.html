@@ -824,6 +824,14 @@ input:focus,textarea:focus,select:focus{border-color:rgba(71,211,255,.4)}
 </nav>
 
 <script>
+window.addEventListener("load", function(){
+  console.log("ATLANTIDA MINI APP JS LOADED");
+  if(typeof toast === "function"){
+    toast("✅ Mini App JS работает");
+  }
+});
+</script>
+<script>
 
 const API = "https://atlantidamarket.onrender.com";
 
